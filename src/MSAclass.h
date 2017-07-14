@@ -34,6 +34,7 @@ private:
 
 public:
 
+	/* make these private ? */
 	static const unsigned char AMINO_INDICES[26];
 	static const unsigned char CHAR_INDICES[21];
 
