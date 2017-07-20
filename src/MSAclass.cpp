@@ -20,7 +20,7 @@ const unsigned char MSAclass::AMINO_INDICES[26] = { 0, 20, 4, 3, 6, 13, 7, 8, 9,
 
 /* 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 *
  * A R N D C Q E G H I  L  K  M  F  P  S  T  W  Y  V  - */
-const unsigned char MSAclass::CHAR_INDICES[21] = { 65, 82, 78, 68, 67, 81, 69,
+const unsigned char MSAclass::CHAR_INDICES[NAA] = { 65, 82, 78, 68, 67, 81, 69,
 		71, 72, 73, 76, 75, 77, 70, 80, 83, 84, 87, 89, 86, 45 };
 
 unsigned char MSAclass::aatoi(unsigned char aa) {
@@ -40,9 +40,11 @@ unsigned char MSAclass::aatoi(unsigned char aa) {
 
 unsigned char MSAclass::itoaa(unsigned char i) {
 
-	assert(i < 0 || i > 20); /* index out of range */
-
-	return MSAclass::CHAR_INDICES[i];
+	if (i < 0 || i > 20) {
+		return '-';
+	} else {
+		return MSAclass::CHAR_INDICES[i];
+	}
 
 }
 
@@ -98,10 +100,10 @@ MSAclass::MSAclass(const char *name) :
 
 	/* clean lowercase */
 	len_ref = a3m[0].second.size(); /* reference sequence length */
-	for (uint16_t i = 1; i < a3m.size(); i++) {
+	for (size_t i = 1; i < a3m.size(); i++) {
 		size_t len = CleanLowercase(a3m[i].second);
 		if (len != len_ref) {
-			printf("Error: sequence length mismatch at a3m[%d]\n", i + 1);
+			printf("Error: sequence length mismatch at a3m[%ld]\n", i + 1);
 			exit(1);
 		}
 	}
@@ -117,6 +119,8 @@ MSAclass::MSAclass(const char *name) :
 	std::generate(col_map.begin(), col_map.end(),
 			[] {static int i {0}; return i++;});
 
+	a3m_to_msa = col_map;
+
 	/* populate msa */
 	Allocate();
 	SetMsa();
@@ -125,7 +129,7 @@ MSAclass::MSAclass(const char *name) :
 
 MSAclass::MSAclass(const MSAclass &source) :
 		a3m(source.a3m), len_ref(source.len_ref), row_map(source.row_map), col_map(
-				source.col_map), msa(
+				source.col_map), a3m_to_msa(source.a3m_to_msa), msa(
 		NULL), nrow(source.nrow), ncol(source.ncol) {
 
 	Allocate();
@@ -145,6 +149,8 @@ MSAclass & MSAclass::operator =(const MSAclass & source) {
 
 	row_map = source.row_map;
 	col_map = source.col_map;
+
+	a3m_to_msa = source.a3m_to_msa;
 
 	nrow = source.nrow;
 	ncol = source.ncol;
@@ -181,12 +187,12 @@ void MSAclass::TrimRight(char *str) {
 	 * code from CCMpred
 	 */
 
-	// find first non-whitespace character from right
+// find first non-whitespace character from right
 	char *end = str + strlen(str) - 1;
 	while (end > str && isspace(*end))
 		end--;
 
-	// add new null terminator
+// add new null terminator
 	*(end + 1) = 0;
 
 }
@@ -195,7 +201,7 @@ size_t MSAclass::CleanLowercase(std::string &str) {
 
 	size_t pos = 0;
 
-	for (uint16_t i = 0; i < str.size(); i++) {
+	for (size_t i = 0; i < str.size(); i++) {
 		if (!islower(str[i])) {
 			str[pos] = str[i];
 			pos++;
@@ -207,21 +213,32 @@ size_t MSAclass::CleanLowercase(std::string &str) {
 
 }
 
-char MSAclass::GetResidue(uint16_t i, uint16_t j) {
+char MSAclass::GetResidue(size_t i, size_t j) {
 
 	return a3m[i].second[j];
 
 }
 
-uint16_t MSAclass::GetNrow() {
+size_t MSAclass::GetNrow() {
 
 	return row_map.size();
 
 }
 
-uint16_t MSAclass::GetNcol() {
+size_t MSAclass::GetNcol() {
 
 	return col_map.size();
+
+}
+
+size_t MSAclass::GetMsaIdx(size_t idx) {
+
+	if (idx < 0 || idx >= len_ref) {
+		printf("Error: A3M index (%ld) out of range\n", idx);
+		exit(1);
+	}
+
+	return a3m_to_msa[idx];
 
 }
 
@@ -254,6 +271,7 @@ size_t MSAclass::CleanRows(double gaps_frac) {
 size_t MSAclass::CleanCols(double cols_frac) {
 
 	col_map.clear();
+	a3m_to_msa.resize(len_ref);
 
 	/*
 	 * calculate numbers of gaps for each column
@@ -274,12 +292,17 @@ size_t MSAclass::CleanCols(double cols_frac) {
 	}
 
 	/*
-	 * populate col_map[]
+	 * populate col_map[] and a3m_to_msa[]
 	 */
+	size_t count = 0;
 	for (size_t i = 0; i < len_ref; i++) {
 
 		if ((double) counts[i] / nrow < cols_frac) {
 			col_map.push_back(i);
+			a3m_to_msa[i] = count;
+			count++;
+		} else {
+			a3m_to_msa[i] = SIZE_MAX;
 		}
 
 	}
