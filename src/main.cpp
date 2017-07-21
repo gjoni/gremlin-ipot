@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 
 	MSA.CleanMsa(0.25, 0.25);
 //	MSA.SaveMSA("SPC19.msa");
-	MSA.CastToIdx();
+//	MSA.CastToIdx();
 
 	printf("# %ld x %ld\n", MSA.GetNcol(), MSA.GetNrow());
 

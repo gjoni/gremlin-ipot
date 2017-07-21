@@ -6,6 +6,7 @@
  */
 
 #include <cstring>
+#include <cassert>
 
 #include "MRFclass.h"
 
@@ -36,6 +37,25 @@ MRFclass::MRFclass(double *h_, double *J_, size_t dim_) :
 
 	memcpy(h, h_, dimh * sizeof(double));
 	memcpy(J, J_, dimJ * sizeof(double));
+
+}
+
+MRFclass& MRFclass::operator=(const MRFclass &source) {
+
+	assert(this != &source); /* an attempt to assign Residue to itself */
+
+	Free();
+
+	dim = source.dim;
+	dimh = source.dimh;
+	dimJ = source.dimJ;
+
+	Allocate();
+
+	memcpy(h, source.h, dimh * sizeof(double));
+	memcpy(J, source.J, dimJ * sizeof(double));
+
+	return *this;
 
 }
 

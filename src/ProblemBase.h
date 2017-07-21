@@ -6,7 +6,6 @@
  */
 
 // V20170720 - first functional class
-
 #ifndef PROBLEMBASE_H_
 #define PROBLEMBASE_H_
 
@@ -27,8 +26,8 @@ class ProblemBase {
 
 protected:
 
-	MSAclass *MSA;
-//	unsigned char *msa; /* MSA converted into indices */
+	const MSAclass *MSA;
+	unsigned char *msa; /* MSA converted into indices */
 
 	size_t dim; /* problem dimension (number of variables) */
 
@@ -41,7 +40,8 @@ protected:
 public:
 
 	ProblemBase();
-	ProblemBase(MSAclass &MSA);
+	ProblemBase(const MSAclass &MSA);
+	ProblemBase(const ProblemBase &source);
 	virtual ~ProblemBase();
 
 //	ProblemBase& operator=(const ProblemBase &source);

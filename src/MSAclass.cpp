@@ -58,14 +58,14 @@ void MSAclass::aatoi(unsigned char *str, size_t len) {
 }
 
 MSAclass::MSAclass() :
-		len_ref(0), msa(NULL), nrow(0), ncol(0) {
+		len_ref(0), nrow(0), ncol(0) {
 
 	/* nothing to be done */
 
 }
 
 MSAclass::MSAclass(const char *name) :
-		len_ref(0), msa(NULL), nrow(0), ncol(0) {
+		len_ref(0), nrow(0), ncol(0) {
 
 	FILE *F = fopen(name, "r");
 	if (F == NULL) {
@@ -123,18 +123,15 @@ MSAclass::MSAclass(const char *name) :
 
 	/* populate msa */
 	Allocate();
-	SetMsa();
 
 }
 
 MSAclass::MSAclass(const MSAclass &source) :
 		a3m(source.a3m), len_ref(source.len_ref), row_map(source.row_map), col_map(
-				source.col_map), a3m_to_msa(source.a3m_to_msa), msa(
-		NULL), nrow(source.nrow), ncol(source.ncol) {
+				source.col_map), a3m_to_msa(source.a3m_to_msa), nrow(
+				source.nrow), ncol(source.ncol) {
 
 	Allocate();
-
-	memcpy(msa, source.msa, nrow * ncol * sizeof(unsigned char));
 
 }
 
@@ -157,21 +154,19 @@ MSAclass & MSAclass::operator =(const MSAclass & source) {
 
 	Allocate();
 
-	memcpy(msa, source.msa, nrow * ncol * sizeof(unsigned char));
-
 	return *this;
 
 }
 
 void MSAclass::Allocate() {
 
-	msa = (unsigned char*) malloc(nrow * ncol * sizeof(unsigned char));
+	/* */
 
 }
 
 void MSAclass::Free() {
 
-	free(msa);
+	/* */
 
 }
 
@@ -213,25 +208,25 @@ size_t MSAclass::CleanLowercase(std::string &str) {
 
 }
 
-char MSAclass::GetResidue(size_t i, size_t j) {
+char MSAclass::GetA3Mres(size_t i, size_t j) const {
 
 	return a3m[i].second[j];
 
 }
 
-size_t MSAclass::GetNrow() {
+size_t MSAclass::GetNrow() const {
 
 	return row_map.size();
 
 }
 
-size_t MSAclass::GetNcol() {
+size_t MSAclass::GetNcol() const {
 
 	return col_map.size();
 
 }
 
-size_t MSAclass::GetMsaIdx(size_t idx) {
+size_t MSAclass::GetMsaIdx(size_t idx) const {
 
 	if (idx < 0 || idx >= len_ref) {
 		printf("Error: A3M index (%ld) out of range\n", idx);
@@ -242,9 +237,26 @@ size_t MSAclass::GetMsaIdx(size_t idx) {
 
 }
 
-unsigned char const * MSAclass::GetMsa() {
+unsigned char * MSAclass::GetMsa() const {
 
-	return msa;
+	unsigned char *msa_ = (unsigned char*) malloc(
+			nrow * ncol * sizeof(unsigned char));
+
+	size_t idx = 0;
+
+	for (size_t i = 0; i < row_map.size(); i++) {
+
+		size_t irow = row_map[i];
+		const std::string &seq = a3m[irow].second;
+
+		for (size_t j = 0; j < col_map.size(); j++) {
+			size_t icol = col_map[j];
+			msa_[idx] = seq[icol];
+			idx++;
+		}
+	}
+
+	return msa_;
 
 }
 
@@ -315,35 +327,10 @@ size_t MSAclass::CleanCols(double cols_frac) {
 
 }
 
-void MSAclass::SetMsa() {
-
-	unsigned char *msa_ = msa;
-
-	for (size_t i = 0; i < row_map.size(); i++) {
-
-		size_t irow = row_map[i];
-		std::string &seq = a3m[irow].second;
-
-		for (size_t j = 0; j < col_map.size(); j++) {
-			size_t icol = col_map[j];
-			*msa_ = seq[icol];
-			msa_++;
-		}
-	}
-
-}
-
 void MSAclass::CleanMsa(double rgaps, double cgaps) {
 
 	CleanRows(rgaps);
 	CleanCols(cgaps);
-	SetMsa();
-
-}
-
-void MSAclass::CastToIdx() {
-
-	MSAclass::aatoi(msa, nrow * ncol);
 
 }
 
@@ -356,12 +343,18 @@ void MSAclass::SaveMSA(const std::string &name) const {
 		exit(1);
 	}
 
-	unsigned char *msa_p = msa;
-	for (size_t i = 0; i < nrow; i++) {
-		for (size_t j = 0; j < ncol; j++) {
-			fprintf(F, "%c", *msa_p++);
+	for (size_t i = 0; i < row_map.size(); i++) {
+
+		size_t irow = row_map[i];
+		const std::string &seq = a3m[irow].second;
+
+		for (size_t j = 0; j < col_map.size(); j++) {
+			size_t icol = col_map[j];
+			fprintf(F, "%c", seq[icol]);
 		}
+
 		fprintf(F, "\n");
+
 	}
 
 	fclose(F);
@@ -370,12 +363,18 @@ void MSAclass::SaveMSA(const std::string &name) const {
 
 void MSAclass::PrintMSA() const {
 
-	unsigned char *msa_p = msa;
-	for (size_t i = 0; i < nrow; i++) {
-		for (size_t j = 0; j < ncol; j++) {
-			printf("%c", *msa_p++);
+	for (size_t i = 0; i < row_map.size(); i++) {
+
+		size_t irow = row_map[i];
+		const std::string &seq = a3m[irow].second;
+
+		for (size_t j = 0; j < col_map.size(); j++) {
+			size_t icol = col_map[j];
+			printf("%c", seq[icol]);
 		}
+
 		printf("\n");
+
 	}
 
 }

@@ -7,26 +7,37 @@
 
 #include <cstring>
 #include <cmath>
+#include <cassert>
 
 #include "ProblemFull.h"
 
 ProblemFull::ProblemFull() :
-		ProblemBase(), lsingle(0.0), lpair(0.0), gaux(NULL) {
+		ProblemBase(), lsingle(0.0), lpair(0.0), dim2body(0), gaux(NULL) {
 
 	/* nothing to be done */
 
 }
 
-ProblemFull::ProblemFull(MSAclass &MSA_) :
+ProblemFull::ProblemFull(const MSAclass &MSA_) :
 		ProblemBase(MSA_) {
 
 	lsingle = 0.01;
 	lpair = 0.2 * (MSA->ncol - 1);
 
-	dim = MSA->ncol * MSAclass::NAA * (1 + MSA->ncol * MSAclass::NAA)
-	/* - MSA->ncol */;
+	dim = MSA->ncol * MSAclass::NAA * (1 + MSA->ncol * MSAclass::NAA);
+	dim2body = MSA->ncol * MSAclass::NAA * MSA->ncol * MSAclass::NAA;
 
 	Allocate();
+
+}
+
+ProblemFull::ProblemFull(const ProblemFull &source) :
+		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim2body(
+				source.dim2body), gaux(NULL) {
+
+	Allocate();
+
+	memcpy(gaux, source.gaux, dim2body * sizeof(double));
 
 }
 
@@ -36,9 +47,31 @@ ProblemFull::~ProblemFull() {
 
 }
 
+ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
+
+	assert(this != &source); /* an attempt to assign Residue to itself */
+
+	FreeBase();
+	Free();
+
+	dim = source.dim;
+	MSA = source.MSA;
+
+	AllocateBase();
+	Allocate();
+
+	memcpy(w, source.w, MSA->nrow * sizeof(double));
+	for (size_t i = 0; i < MSA->ncol; i++) {
+		memcpy(we[i], source.we[i], MSA->ncol * sizeof(double));
+	}
+
+	return *this;
+
+}
+
 void ProblemFull::Allocate() {
 
-	gaux = (double*) malloc(dim * sizeof(double));
+	gaux = (double*) malloc(dim2body * sizeof(double));
 
 }
 
@@ -111,7 +144,7 @@ double ProblemFull::f(const gsl_vector *x) {
 		double weight = w[i];
 
 		/* current sequence */
-		unsigned char *seq = MSA->msa + i * ncol;
+		unsigned char *seq = msa + i * ncol;
 
 		/* precomputed energies of every letter
 		 * at every position in the sequence */
@@ -182,7 +215,6 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 	size_t NAA = MSAclass::NAA;
 
 	size_t nsingle = ncol * NAA;
-	size_t nvar = nsingle + ncol * ncol * NAA * NAA;
 
 	const double *x1 = x->data; /* local fields Vi */
 	const double *x2 = x->data + nsingle; /* couplings Wij */
@@ -192,14 +224,14 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 
 	/* set fx and gradient to 0 initially */
 	*f = 0.0;
-	memset(g->data, 0, sizeof(double) * nvar);
-	memset(gaux, 0, sizeof(double) * (NAA * NAA * ncol * ncol));
+	memset(g->data, 0, sizeof(double) * dim);
+	memset(gaux, 0, sizeof(double) * dim2body);
 
 	/* loop over all sequences in the MSA */
 	for (size_t i = 0; i < nrow; i++) {
 
 		double weight = w[i];
-		unsigned char *seq = MSA->msa + i * ncol;
+		unsigned char *seq = msa + i * ncol;
 
 		/* precomputed energies of every letter
 		 * at every position in the sequence */
@@ -320,7 +352,7 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 	}
 
 	/* regulariz J */
-	for (size_t v = nsingle; v < nvar; v++) {
+	for (size_t v = nsingle; v < dim; v++) {
 		reg += 0.5 * lpair * x->data[v] * x->data[v];
 		g->data[v] += 2.0 * lpair * x->data[v];
 	}

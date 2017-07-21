@@ -25,6 +25,7 @@ private:
 	double lpair;
 
 	/* aux array to store asymmetric gradient */
+	size_t dim2body;
 	double *gaux;
 
 	void Allocate();
@@ -32,9 +33,12 @@ private:
 
 public:
 
-	ProblemFull(MSAclass &MSA);
 	ProblemFull();
+	ProblemFull(const MSAclass &MSA);
+	ProblemFull(const ProblemFull &source);
 	~ProblemFull();
+
+	ProblemFull& operator=(const ProblemFull &source);
 
 	double f(const gsl_vector *x);
 	void df(const gsl_vector *x, gsl_vector *g);

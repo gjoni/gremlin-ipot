@@ -51,11 +51,6 @@ private:
 
 	size_t CleanRows(double gaps_frac); /* sets row_map */
 	size_t CleanCols(double gaps_frac); /* sets col_map, ref_to_cleaned */
-	void SetMsa();
-
-	/* 1D representation of the CLEANED alignment
-	 * msa[row_map.size() * col_map.size()] */
-	unsigned char *msa;
 
 	/* size of the CLEANED alignment msa[] */
 	size_t nrow; // sequence length - 65536 MAX
@@ -88,23 +83,20 @@ public:
 	MSAclass& operator=(const MSAclass &source);
 
 	/* cleaned MSA dimensions */
-	size_t GetNrow();
-	size_t GetNcol();
+	size_t GetNrow() const;
+	size_t GetNcol() const;
 
 	/* A3M->MSA mapping*/
-	size_t GetMsaIdx(size_t idx);
+	size_t GetMsaIdx(size_t idx) const;
 
-	/* TODO: which residue - A3M or MSA ??? */
-	char GetResidue(size_t i, size_t j);
+	char GetA3Mres(size_t i, size_t j) const;
+//	char GetMSAres(size_t i, size_t j) const;
 
 	/* rows are cleaned first, then columns */
 	void CleanMsa(double rgaps, double cgaps);
 
-	/* msa cannot be modified outside the class */
-	unsigned char const * GetMsa();
-
-	/* convert msa[] characters into indices {0..20} */
-	void CastToIdx();
+	/* 1d array [nrow x ncol] with the cleaned alignment */
+	unsigned char * GetMsa() const;
 
 	/* TODO: entropies */
 

@@ -11,20 +11,45 @@
 #include "ProblemBase.h"
 
 ProblemBase::ProblemBase() :
-		MSA(NULL), dim(0), w(NULL), we(NULL) {
+		MSA(NULL), msa(NULL), dim(0), w(NULL), we(NULL) {
 
 	/* */
 
 }
 
-ProblemBase::ProblemBase(MSAclass &MSA_) :
-		MSA(&MSA_), dim(0), w(NULL), we(NULL) {
+ProblemBase::ProblemBase(const MSAclass &MSA_) :
+		MSA(&MSA_), msa(NULL), dim(MSA_.GetNcol() * MSA_.GetNrow()), w(NULL), we(
+		NULL) {
 
 	AllocateBase();
 
+	msa = MSA->GetMsa();
+
 	Reweight();
 
+	MSAclass::aatoi(msa, dim);
+
 	UnmaskAllEdges();
+
+}
+
+ProblemBase::ProblemBase(const ProblemBase &source) :
+		MSA(source.MSA), msa(NULL), dim(source.MSA->ncol * source.MSA->nrow), w(
+		NULL), we(
+		NULL) {
+
+	AllocateBase();
+
+	size_t msa_dim = MSA->nrow * MSA->ncol;
+
+	msa = (unsigned char *) malloc(msa_dim * sizeof(unsigned char));
+
+	memcpy(msa, source.msa, msa_dim * sizeof(unsigned char));
+	memcpy(w, source.w, MSA->nrow * sizeof(double));
+
+	for (size_t i = 0; i < MSA->ncol; i++) {
+		memcpy(we[i], source.we[i], MSA->ncol * sizeof(double));
+	}
 
 }
 
@@ -38,8 +63,6 @@ void ProblemBase::Reweight(double t) {
 
 	size_t ncol = MSA->ncol;
 	size_t nrow = MSA->nrow;
-
-	unsigned char const *msa = MSA->msa;
 
 	size_t idthres = (size_t) ceil(t * ncol);
 
@@ -162,6 +185,7 @@ void ProblemBase::FreeBase() {
 		free(we);
 	}
 	free(w);
+	free(msa);
 
 	w = NULL;
 	we = NULL;

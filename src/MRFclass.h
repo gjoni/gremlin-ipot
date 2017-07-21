@@ -35,12 +35,12 @@ public:
 	MRFclass& operator=(const MRFclass &source);
 
 	/* pair energy for two characters */
-	double GetPairEnergy(unsigned char a, unsigned char b, size_t imrf,
-			size_t jmrf) const;
+//	double GetPairEnergy(unsigned char a, unsigned char b, size_t imrf,
+//			size_t jmrf) const;
 
 	/* pair energy for two MSA positions */
-	double GetPairEnergy(const MSAclass &MSA, size_t imsa, size_t jmsa,
-			size_t imrf, size_t jmrf) const;
+//	double GetPairEnergy(const MSAclass &MSA, size_t imsa, size_t jmsa,
+//			size_t imrf, size_t jmrf) const;
 
 	/* intra, inter and total energies for a MSA patch */
 //	double GetPatchIntraEnergy(const MSAclass &MSA, size_t msabeg,
