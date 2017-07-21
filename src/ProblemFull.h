@@ -9,7 +9,7 @@
 // The code for computing the objective function and gradients
 // is largely adopted from CCMpred by J.Soeding group
 // https://github.com/soedinglab/CCMpred
-
+// V20170720 - first functional class
 #ifndef PROBLEMFULL_H_
 #define PROBLEMFULL_H_
 

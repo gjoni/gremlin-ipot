@@ -213,7 +213,6 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		/* local probabilities of specific AA
 		 * at every position in the sequence*/
 		double *p = (double*) malloc(NAA * ncol * sizeof(double));
-//		double precomp_norm[NAA * ncol];
 
 		/* initialize energies with local fields */
 		memcpy(e, x1, ncol * (NAA - 1) * sizeof(double));
@@ -303,7 +302,7 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		}
 	}
 
-	// set gradients to zero for self-edges
+	/* set gradients to zero for self-edges */
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {

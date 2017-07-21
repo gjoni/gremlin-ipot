@@ -357,7 +357,7 @@ void MSAclass::SaveMSA(const std::string &name) const {
 	}
 
 	unsigned char *msa_p = msa;
-	for (size_t i = 0 ; i < nrow; i++) {
+	for (size_t i = 0; i < nrow; i++) {
 		for (size_t j = 0; j < ncol; j++) {
 			fprintf(F, "%c", *msa_p++);
 		}
@@ -365,5 +365,17 @@ void MSAclass::SaveMSA(const std::string &name) const {
 	}
 
 	fclose(F);
+
+}
+
+void MSAclass::PrintMSA() const {
+
+	unsigned char *msa_p = msa;
+	for (size_t i = 0; i < nrow; i++) {
+		for (size_t j = 0; j < ncol; j++) {
+			printf("%c", *msa_p++);
+		}
+		printf("\n");
+	}
 
 }

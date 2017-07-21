@@ -5,6 +5,8 @@
  *      Author: ivan
  */
 
+// V20170720 - first functional class
+
 #ifndef PROBLEMBASE_H_
 #define PROBLEMBASE_H_
 
@@ -26,6 +28,7 @@ class ProblemBase {
 protected:
 
 	MSAclass *MSA;
+//	unsigned char *msa; /* MSA converted into indices */
 
 	size_t dim; /* problem dimension (number of variables) */
 

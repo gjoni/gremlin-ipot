@@ -110,6 +110,7 @@ public:
 
 	/* TODO: printing out / saving of the cleaned MSA and the reference sequence */
 	void SaveMSA(const std::string &name) const;
+	void PrintMSA() const;
 
 };
 

@@ -20,6 +20,8 @@ private:
 
 public:
 
+	/* TODO: minimization parameters */
+
 	static MRFclass Minimize(ProblemBase &P);
 
 };

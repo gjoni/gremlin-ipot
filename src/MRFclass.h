@@ -43,12 +43,14 @@ public:
 			size_t imrf, size_t jmrf) const;
 
 	/* intra, inter and total energies for a MSA patch */
-	double GetPatchIntraEnergy(const MSAclass &MSA, size_t msabeg,
-			size_t mrfbeg, size_t size) const;
-	double GetPatchInterEnergy(const MSAclass &MSA, size_t msabeg,
-			size_t mrfbeg, size_t size) const;
+//	double GetPatchIntraEnergy(const MSAclass &MSA, size_t msabeg,
+//			size_t mrfbeg, size_t size) const;
+//	double GetPatchInterEnergy(const MSAclass &MSA, size_t msabeg,
+//			size_t mrfbeg, size_t size) const;
 //	double GetPatchTotalEnergy(const MSAclass &MSA, size_t msabeg,
 //			size_t mrfbeg, size_t size);
+
+	/* TODO: save to / read from file */
 
 };
 

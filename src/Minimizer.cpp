@@ -24,11 +24,17 @@ Minimizer::~Minimizer() {
 
 MRFclass Minimizer::Minimize(ProblemBase &P) {
 
+	size_t dim = P.GetDim();
+
+	if (!dim) {
+		printf("Error: cannot run Gremlin for an empty MSA\n");
+		exit(1);
+	}
+
 //	double f = 0.0;
 
 	gsl_multimin_function_fdf gsl_func;
 
-	size_t dim = P.GetDim();
 	gsl_func.n = dim;
 	gsl_func.f = ProblemStatic::f;
 	gsl_func.df = ProblemStatic::df;

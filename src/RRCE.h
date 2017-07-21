@@ -56,10 +56,6 @@ public:
 	void GetCouplings(double **J);
 	void GetFields(double *h);
 
-	/* TODO:
-	 *  1) double GetJ(int a, int b);
-	 *  2) double Geth(int a); */
-
 };
 
 #endif /* RRCE_H_ */
