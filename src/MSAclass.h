@@ -108,6 +108,9 @@ public:
 
 	/* TODO: entropies */
 
+	/* TODO: printing out / saving of the cleaned MSA and the reference sequence */
+	void SaveMSA(const std::string &name) const;
+
 };
 
 #endif /* MSACLASS_H_ */

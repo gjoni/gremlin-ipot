@@ -9,35 +9,25 @@
 int main(int argc, char *argv[]) {
 
 	MSAclass MSA(argv[1]);
-	MSA.CleanMsa(0.1, 0.1);
 
-	MSAclass MSA2(MSA);
+	MSA.CleanMsa(0.25, 0.25);
+//	MSA.SaveMSA("SPC19.msa");
+	MSA.CastToIdx();
 
-	MSA2.CastToIdx();
+	printf("# %ld x %ld\n", MSA.GetNcol(), MSA.GetNrow());
 
-	unsigned char const *msa = MSA2.GetMsa();
-	size_t nrow = MSA2.GetNrow();
-	size_t ncol = MSA2.GetNcol();
+	/*
+	 for (size_t i = 0; i < nrow; i++) {
+	 for (size_t j = 0; j < ncol; j++) {
+	 printf(" %d", msa[i * ncol + j]);
+	 }
+	 printf("\n");
+	 }
+	 */
 
-	printf("# %ld x %ld\n", nrow, ncol);
+	ProblemFull P(MSA);
 
-	for (size_t i = 0; i < nrow; i++) {
-		for (size_t j = 0; j < ncol; j++) {
-			printf(" %d", msa[i * ncol + j]);
-		}
-		printf("\n");
-	}
-
-	ProblemFull P(MSA2);
-
-	size_t NAA = MSAclass::NAA;
-	gsl_vector*x = gsl_vector_alloc(ncol * NAA * (1 + ncol * NAA));
-	double f = P.f(x);
-	printf("# f(x)= %f\n", f);
-
-	printf("start\n");
-	f = Minimizer::Minimize(P);
-	printf("stop\n");
+	MRFclass MRF = Minimizer::Minimize(P);
 
 	/*
 	 RRCE RRCE_(argv[1]);

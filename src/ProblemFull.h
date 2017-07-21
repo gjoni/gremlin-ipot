@@ -7,7 +7,7 @@
 
 // Standard GREMLIN2 protocol with L2 regularization
 // The code for computing the objective function and gradients
-// is largely adopted from CCMpred by the J.Soeding group
+// is largely adopted from CCMpred by J.Soeding group
 // https://github.com/soedinglab/CCMpred
 
 #ifndef PROBLEMFULL_H_
@@ -24,19 +24,11 @@ private:
 	double lsingle;
 	double lpair;
 
-	/* aux array to store symmetric gradient */
-	double *gsymm;
+	/* aux array to store asymmetric gradient */
+	double *gaux;
 
 	void Allocate();
 	void Free();
-
-	/* TODO: get rid of nvar, leave dim only */
-
-	/* TODO: store calculated parameters */
-
-	/* TODO: CCMpred algorithm should be used here (speed is important) */
-
-//	void SaveSolution();
 
 public:
 

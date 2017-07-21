@@ -23,7 +23,8 @@ ProblemBase::ProblemBase(MSAclass &MSA_) :
 	AllocateBase();
 
 	Reweight();
-	UnmaskEdges();
+
+	UnmaskAllEdges();
 
 }
 
@@ -96,7 +97,7 @@ void ProblemBase::Reweight(double t) {
 void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
 
 	/* set all we[][] to 1.0 */
-	UnmaskEdges();
+	UnmaskAllEdges();
 
 	/* mask the specified edges */
 	for (auto const& edge : e) {
@@ -131,7 +132,7 @@ void ProblemBase::UnmaskEdges(const std::vector<std::pair<int, int> > &e) {
 
 }
 
-void ProblemBase::UnmaskEdges() {
+void ProblemBase::UnmaskAllEdges() {
 
 	/* set all we[][] to 1.0 */
 	for (size_t i = 0; i < MSA->ncol; i++) {

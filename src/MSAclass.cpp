@@ -346,3 +346,24 @@ void MSAclass::CastToIdx() {
 	MSAclass::aatoi(msa, nrow * ncol);
 
 }
+
+void MSAclass::SaveMSA(const std::string &name) const {
+
+	FILE *F = fopen(name.c_str(), "w");
+
+	if (F == NULL) {
+		printf("Error: cannot save MSA '%s'\n", name.c_str());
+		exit(1);
+	}
+
+	unsigned char *msa_p = msa;
+	for (size_t i = 0 ; i < nrow; i++) {
+		for (size_t j = 0; j < ncol; j++) {
+			fprintf(F, "%c", *msa_p++);
+		}
+		fprintf(F, "\n");
+	}
+
+	fclose(F);
+
+}

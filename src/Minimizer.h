@@ -9,6 +9,7 @@
 #define MINIMIZER_H_
 
 #include "ProblemBase.h"
+#include "MRFclass.h"
 
 class Minimizer {
 
@@ -19,7 +20,7 @@ private:
 
 public:
 
-	static double Minimize(ProblemBase &P);
+	static MRFclass Minimize(ProblemBase &P);
 
 };
 

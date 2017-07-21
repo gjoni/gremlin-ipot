@@ -20,6 +20,9 @@
  */
 
 class ProblemBase {
+
+	friend class Minimizer;
+
 protected:
 
 	MSAclass *MSA;
@@ -50,12 +53,14 @@ public:
 	 * residue indices are as in the REFERENCE sequence
 	 */
 
-	/* force e[i,j] to be equal to 0, all others to 1 */
+	/* set e[i,j] to 0, all others to 1 */
 	void MaskEdges(const std::vector<std::pair<int, int> > &e);
 
-	/* force e[i,j] to be equal to 1, all others to 0 */
+	/* set e[i,j] to 1, all others to 0 */
 	void UnmaskEdges(const std::vector<std::pair<int, int> > &e);
-	void UnmaskEdges();
+
+	/* default */
+	void UnmaskAllEdges();
 
 	size_t GetDim();
 
