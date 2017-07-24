@@ -22,7 +22,7 @@ public:
 
 	/* TODO: minimization parameters */
 
-	static MRFclass Minimize(ProblemBase &P);
+	static MRFclass Minimize(ProblemBase &P, int niter = 25);
 
 };
 

@@ -5,49 +5,49 @@
 #include "MSAclass.h"
 #include "ProblemFull.h"
 #include "Minimizer.h"
+#include "MRFprocessor.h"
+
+/* TODO: program parameters
+ * 1) a3m file (in)
+ * 2) mtx file (out)
+ * 3) gaps per row (def = 0.25)
+ * 4) gaps per col (def = 0.25)
+ * 5) number of iterations (def = 25)
+ * 6) constraints: mask (-m) OR unmask (-u) edges
+ * 7) mrf file (out) */
 
 int main(int argc, char *argv[]) {
 
 	MSAclass MSA(argv[1]);
 
 	MSA.CleanMsa(0.25, 0.25);
-//	MSA.SaveMSA("SPC19.msa");
-//	MSA.CastToIdx();
 
 	printf("# %ld x %ld\n", MSA.GetNcol(), MSA.GetNrow());
 
-	/*
-	 for (size_t i = 0; i < nrow; i++) {
-	 for (size_t j = 0; j < ncol; j++) {
-	 printf(" %d", msa[i * ncol + j]);
-	 }
-	 printf("\n");
-	 }
-	 */
-
 	ProblemFull P(MSA);
 
-	MRFclass MRF = Minimizer::Minimize(P);
+	MRFclass MRF = Minimizer::Minimize(P, 100);
+	MRF.Save("mrf.txt");
 
-	/*
-	 RRCE RRCE_(argv[1]);
+	size_t dim = MRF.GetDim();
+	double **mtx = (double**) malloc(dim * sizeof(double*));
+	for (size_t i = 0; i < dim; i++) {
+		mtx[i] = (double*) malloc(dim * sizeof(double));
+	}
 
-	 const int N = 20;
-	 double **J = (double**) malloc(N * sizeof(double*));
-	 for (int i = 0; i < N; i++) {
-	 J[i] = (double*) malloc(N * sizeof(double));
-	 }
+	MRFprocessor::APC(MRF, mtx);
 
-	 RRCE_.GetCouplings(J);
-	 EigenRRCE Eigen(J);
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			printf("%.5e ", mtx[i][j]);
+		}
+		printf("\n");
+	}
 
-	 printf("%f\n", Eigen.GetReconstructionCorrel(atof(argv[2])));
-
-	 for (int i = 0; i < N; i++) {
-	 free(J[i]);
-	 }
-	 free(J);
-	 */
+	for (size_t i = 0; i < dim; i++) {
+		free(mtx[i]);
+	}
+	free(mtx);
 
 	return 0;
 

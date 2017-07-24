@@ -22,7 +22,7 @@ Minimizer::~Minimizer() {
 	// TODO Auto-generated destructor stub
 }
 
-MRFclass Minimizer::Minimize(ProblemBase &P) {
+MRFclass Minimizer::Minimize(ProblemBase &P, int niter) {
 
 	size_t dim = P.GetDim();
 
@@ -50,7 +50,7 @@ MRFclass Minimizer::Minimize(ProblemBase &P) {
 	gsl_vector *x = gsl_vector_alloc(dim);
 	memset(x->data, 0, dim * sizeof(double));
 
-	gsl_multimin_fdfminimizer_set(s, &gsl_func, x, 10.0, 0.2);
+	gsl_multimin_fdfminimizer_set(s, &gsl_func, x, 10.0, 0.1);
 
 	printf("# %-8s%-14s%-12s%-12s%-12s%-12s\n", "iter", "f(x)", "||x||",
 			"||dx||", "step", "reltol");
@@ -78,7 +78,9 @@ MRFclass Minimizer::Minimize(ProblemBase &P) {
 			printf("# Minimum found at iteration %d!!!\n", iter);
 		}
 
-	} while (status == GSL_CONTINUE && iter < 10);
+		fflush(stdout);
+
+	} while (status == GSL_CONTINUE && iter < niter);
 
 	/*
 	 * minimization protocol
