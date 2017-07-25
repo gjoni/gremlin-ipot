@@ -29,6 +29,7 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 	}
 	mean /= dim * dim;
 
+	/* TODO: subtracting means gives almost no effect */
 	for (size_t a = 0; a < dim; a++) {
 		for (size_t b = 0; b < dim; b++) {
 			double m = mat[a * dim + b] - mean;
@@ -90,5 +91,70 @@ void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
 
 	/* free */
 	free(means);
+
+}
+
+void MRFprocessor::APC(const MRFclass &MRF, MTX &result) {
+
+	size_t dim = MRF.GetDim();
+	result.dim = dim;
+
+	result.mtx1d.resize(dim * dim);
+
+	double **mtx = (double**) malloc(dim * sizeof(double*));
+	for (size_t i = 0; i < dim; i++) {
+		mtx[i] = (double*) malloc(dim * sizeof(double));
+	}
+
+	APC(MRF, mtx);
+
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			result.mtx1d[i * dim + j] = mtx[i][j];
+		}
+	}
+
+	for (size_t i = 0; i < dim; i++) {
+		free(mtx[i]);
+	}
+	free(mtx);
+
+}
+
+void MRFprocessor::SaveMTX(const MTX &result, const std::string &name) {
+
+	FILE *F = fopen(name.c_str(), "w");
+	if (F == NULL) {
+		printf("Error: cannot open '%s' file to save MTX\n", name.c_str());
+		exit(1);
+	}
+
+	for (size_t i = 0; i < result.dim; i++) {
+		for (size_t j = 0; j < result.dim; j++) {
+			fprintf(F, "%.5e ", result.mtx1d[i * result.dim + j]);
+		}
+		fprintf(F, "\n");
+	}
+
+	fclose(F);
+
+}
+
+double MRFprocessor::GetScore(const MTX &result,
+		const std::vector<std::pair<size_t, size_t> > &contacts) {
+
+	double E = 0.0;
+
+	size_t dim = result.dim;
+
+	for (const auto& c : contacts) {
+		size_t i = c.first;
+		size_t j = c.second;
+		if (i < dim && j < dim && i >= 0 && j >= 0) {
+			E += result.mtx1d[i * dim + j];
+		}
+	}
+
+	return E;
 
 }

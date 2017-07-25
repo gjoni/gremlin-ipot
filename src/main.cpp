@@ -1,4 +1,5 @@
 #include <cstdio>
+//#include <unistd.h> // to parse program options
 
 #include "RRCE.h"
 #include "EigenRRCE.h"
@@ -29,25 +30,10 @@ int main(int argc, char *argv[]) {
 	MRFclass MRF = Minimizer::Minimize(P, 100);
 	MRF.Save("mrf.txt");
 
-	size_t dim = MRF.GetDim();
-	double **mtx = (double**) malloc(dim * sizeof(double*));
-	for (size_t i = 0; i < dim; i++) {
-		mtx[i] = (double*) malloc(dim * sizeof(double));
-	}
+	MRFprocessor::MTX result;
 
-	MRFprocessor::APC(MRF, mtx);
-
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = 0; j < dim; j++) {
-			printf("%.5e ", mtx[i][j]);
-		}
-		printf("\n");
-	}
-
-	for (size_t i = 0; i < dim; i++) {
-		free(mtx[i]);
-	}
-	free(mtx);
+	MRFprocessor::APC(MRF, result);
+	MRFprocessor::SaveMTX(result, "mtx2.txt");
 
 	return 0;
 

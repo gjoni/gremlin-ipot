@@ -378,3 +378,20 @@ void MSAclass::PrintMSA() const {
 	}
 
 }
+
+std::vector<std::pair<size_t, size_t> > MSAclass::CastToMsa(
+		const std::vector<std::pair<int, int> > &contacts) const {
+
+	std::vector<std::pair<size_t, size_t> > contacts_new;
+
+	for (const auto& c : contacts) {
+		size_t i = GetMsaIdx(c.first);
+		size_t j = GetMsaIdx(c.second);
+		if (i < SIZE_MAX && j < SIZE_MAX) {
+			contacts_new.push_back(std::make_pair(i, j));
+		}
+	}
+
+	return contacts_new;
+
+}

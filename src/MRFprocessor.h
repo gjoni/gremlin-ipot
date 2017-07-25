@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <tuple>
+#include <map>
 
 #include "MRFclass.h"
 
@@ -19,30 +20,30 @@ private:
 	~MRFprocessor();
 
 	static double FNorm(const double *x, size_t dim);
+	static void APC(const MRFclass &MRF, double **mtx);
 
 public:
 
-	struct Contact {
-		size_t a;
-		size_t b;
-		double score;
+	struct MTX {
+		std::vector<double> mtx1d; /* 1d array [dim x dim] */
+		size_t dim;
 	};
 
 	/* TODO:
-	 * 1) APC correction
-	 * 2) selection of top contacts
+	 * 1) selection of top contacts
+	 * 2) scoring of contacts by 'contact' score
 	 * 3) conversion into Rosetta constraints */
 
-	static void APC(const MRFclass &MRF, double **mtx);
-//	static void APC(const MRFclass &MRF, std::vector<Contact> &contacts);
+	/* average product correction */
+	static void APC(const MRFclass &MRF, MTX &result);
 
-//	static std::vector<Contact> GetTopContacts(const double **mtx);
+	/* save to file */
+	static void SaveMTX(const MTX &result, const std::string &name);
 
-	/* TODO: 'energy' score */
-//	static double GetScore(const MRFclass &MRF, const MSAclass &MSA,
-//			const std::vector<std::pair<size_t, size_t> > &contacts);
-	/* TODO: 'contact' score */
-//	static double GetScore();
+	/* 'contact' score */
+	static double GetScore(const MTX &result,
+			const std::vector<std::pair<size_t, size_t> > &contacts);
+
 };
 
 #endif /* MRFPROCESSOR_H_ */

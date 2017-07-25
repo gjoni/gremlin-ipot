@@ -38,6 +38,10 @@ public:
 	ProblemFull(const ProblemFull &source);
 	~ProblemFull();
 
+	/* TODO: set reg. parameters */
+//	void SetLH();
+//	void SetLJ();
+
 	ProblemFull& operator=(const ProblemFull &source);
 
 	double f(const gsl_vector *x);

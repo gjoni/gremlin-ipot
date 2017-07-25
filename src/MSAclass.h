@@ -89,6 +89,12 @@ public:
 	/* A3M->MSA mapping*/
 	size_t GetMsaIdx(size_t idx) const;
 
+	/* change residue indices in the array of contacts
+	 * to match the cleaned msa[]
+	 * (contacts with residues missing in the msa[] are omitted) */
+	std::vector<std::pair<size_t, size_t> > CastToMsa(
+			const std::vector<std::pair<int, int> > &contacts) const;
+
 	char GetA3Mres(size_t i, size_t j) const;
 //	char GetMSAres(size_t i, size_t j) const;
 
@@ -98,11 +104,10 @@ public:
 	/* 1d array [nrow x ncol] with the cleaned alignment */
 	unsigned char * GetMsa() const;
 
-	/* TODO: entropies */
-
-	/* TODO: printing out / saving of the cleaned MSA and the reference sequence */
 	void SaveMSA(const std::string &name) const;
 	void PrintMSA() const;
+
+	/* TODO: entropies */
 
 };
 

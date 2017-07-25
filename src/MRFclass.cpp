@@ -175,3 +175,72 @@ void MRFclass::Save(const std::string &name) const {
 	fclose(F);
 
 }
+
+double MRFclass::GetPairEnergies(const MSAclass &MSA,
+		const std::vector<std::pair<size_t, size_t> > &contacts) const {
+
+	assert(MSA.GetNcol() == dim); /* MRF and cleaned MSA length mismatch */
+
+	double E = 0.0;
+
+	size_t nrow = MSA.GetNrow();
+	size_t ncol = MSA.GetNcol();
+	size_t NAA = MSAclass::NAA;
+
+	/* prepare cleaned MSA */
+	unsigned char *msa = MSA.GetMsa();
+	MSAclass::aatoi(msa, nrow * ncol);
+
+	/* loop over all sequences in the msa[] */
+	for (size_t i = 0; i < nrow; i++) {
+
+		/* current sequence */
+		unsigned char *seq = msa + i * ncol;
+
+		/* loop over all contacts */
+		for (const auto& c : contacts) {
+			size_t a = seq[c.first];
+			size_t b = seq[c.second];
+
+			/* omit pairs with gaps */
+			if (a < NAA - 1 && b < NAA - 1) {
+				E += J[(c.first * ncol + c.second) * NAA * NAA + a * NAA + b];
+			}
+
+		}
+	}
+
+	return E;
+
+}
+
+double MRFclass::GetPairEnergies(const unsigned char *msa, size_t nrow,
+		const std::vector<std::pair<size_t, size_t> > &contacts) const {
+
+	double E = 0.0;
+
+	size_t NAA = MSAclass::NAA;
+
+	/* loop over all sequences in the msa[] */
+	for (size_t i = 0; i < nrow; i++) {
+
+		/* current sequence */
+		const unsigned char *seq = msa + i * dim;
+
+		/* loop over all contacts */
+		for (const auto& c : contacts) {
+			size_t a = seq[c.first];
+			size_t b = seq[c.second];
+
+			/* omit pairs with gaps */
+			if (a < NAA - 1 && b < NAA - 1) {
+				E += J[(c.first * dim + c.second) * NAA * NAA + a * NAA + b];
+			}
+
+		}
+	}
+
+	return E;
+
+
+}
