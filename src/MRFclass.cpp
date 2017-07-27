@@ -11,24 +11,25 @@
 #include "MRFclass.h"
 
 MRFclass::MRFclass() :
-		dim(0), dimh(0), dimJ(0), h(NULL), J(NULL) {
+		dim(0), dimh(0), dimJ(0), h(NULL), J(NULL), we(NULL) {
 
 	/* */
 
 }
 
 MRFclass::MRFclass(const MRFclass &s) :
-		dim(s.dim), dimh(s.dimh), dimJ(s.dimJ), h(NULL), J(NULL) {
+		dim(s.dim), dimh(s.dimh), dimJ(s.dimJ), h(NULL), J(NULL), we(NULL) {
 
 	Allocate();
 
 	memcpy(h, s.h, dimh * sizeof(double));
 	memcpy(J, s.J, dimJ * sizeof(double));
+	memcpy(we, s.we, dim * dim * sizeof(double));
 
 }
 
 MRFclass::MRFclass(double *h_, double *J_, size_t dim_) :
-		dim(dim_), h(NULL), J(NULL) {
+		dim(dim_), h(NULL), J(NULL), we(NULL) {
 
 	size_t NAA = MSAclass::NAA;
 
@@ -54,10 +55,21 @@ MRFclass::MRFclass(double *h_, double *J_, size_t dim_) :
 		}
 	}
 
+	for (size_t i = 0; i < dim * dim; i++) {
+		we[i] = 1.0;
+	}
+
+}
+
+MRFclass::MRFclass(double *h_, double *J_, double *we_, size_t dim_) :
+		MRFclass(h_, J_, dim_) {
+
+	memcpy(we, we_, dim * dim * sizeof(double));
+
 }
 
 MRFclass::MRFclass(const std::string &name) :
-		dim(0), dimh(0), dimJ(0), h(NULL), J(NULL) {
+		dim(0), dimh(0), dimJ(0), h(NULL), J(NULL), we(NULL) {
 
 	FILE *F = fopen(name.c_str(), "r");
 	if (F == NULL) {
@@ -74,6 +86,13 @@ MRFclass::MRFclass(const std::string &name) :
 
 	Allocate();
 
+	/* edge weights */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			fscanf(F, "%lf ", we + (i * dim + j));
+		}
+	}
+
 	/* local fields */
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t a = 0; a < NAA; a++) {
@@ -84,7 +103,7 @@ MRFclass::MRFclass(const std::string &name) :
 	/* couplings */
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
-			double *Jp = J + i * dim + j;
+			double *Jp = J + (i * dim + j) * NAA * NAA;
 			for (size_t aa = 0; aa < NAA * NAA; aa++) {
 				fscanf(F, "%lf ", Jp++);
 			}
@@ -109,6 +128,7 @@ MRFclass& MRFclass::operator=(const MRFclass &source) {
 
 	memcpy(h, source.h, dimh * sizeof(double));
 	memcpy(J, source.J, dimJ * sizeof(double));
+	memcpy(we, source.we, dim * dim * sizeof(double));
 
 	return *this;
 
@@ -124,6 +144,7 @@ void MRFclass::Allocate() {
 
 	h = (double*) malloc(dimh * sizeof(double));
 	J = (double*) malloc(dimJ * sizeof(double));
+	we = (double*) malloc(dim * dim * sizeof(double));
 
 }
 
@@ -131,6 +152,7 @@ void MRFclass::Free() {
 
 	free(h);
 	free(J);
+	free(we);
 
 }
 
@@ -153,6 +175,14 @@ void MRFclass::Save(const std::string &name) const {
 	/* dimension (seq length) */
 	fprintf(F, "%ld\n", dim);
 
+	/* edge weights */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			fprintf(F, "%.5e ", we[i * dim + j]);
+		}
+		fprintf(F, "\n");
+	}
+
 	/* local fields */
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t a = 0; a < NAA; a++) {
@@ -164,7 +194,7 @@ void MRFclass::Save(const std::string &name) const {
 	/* couplings */
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
-			double *Jp = J + i * dim + j;
+			double *Jp = J + (i * dim + j) * NAA * NAA;
 			for (size_t aa = 0; aa < NAA * NAA; aa++) {
 				fprintf(F, "%.5e ", *Jp++);
 			}
@@ -241,6 +271,5 @@ double MRFclass::GetPairEnergies(const unsigned char *msa, size_t nrow,
 	}
 
 	return E;
-
 
 }

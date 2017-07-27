@@ -32,7 +32,7 @@ protected:
 	size_t dim; /* problem dimension (number of variables) */
 
 	double *w; /* sequence weights */
-	double **we; /* for masking or biasing */
+	double *we; /* for masking or biasing (2D array in 1D representation)*/
 
 	void AllocateBase();
 	void FreeBase();
@@ -46,6 +46,7 @@ public:
 
 //	ProblemBase& operator=(const ProblemBase &source);
 
+	/* TODO: get rid of gsl_vectors (substitute with double*) */
 	virtual double f(const gsl_vector *x) = 0;
 	virtual void df(const gsl_vector *x, gsl_vector *g) = 0;
 	virtual void fdf(const gsl_vector *x, double *f, gsl_vector *g) = 0;

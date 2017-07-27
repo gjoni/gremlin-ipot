@@ -95,6 +95,10 @@ public:
 	std::vector<std::pair<size_t, size_t> > CastToMsa(
 			const std::vector<std::pair<int, int> > &contacts) const;
 
+	/* for a complex */
+//	std::vector<std::pair<size_t, size_t> > CastToMsa(
+//			const std::vector<std::pair<int, int> > &contacts,
+//			size_t len_rec) const;
 	char GetA3Mres(size_t i, size_t j) const;
 //	char GetMSAres(size_t i, size_t j) const;
 
@@ -108,6 +112,10 @@ public:
 	void PrintMSA() const;
 
 	/* TODO: entropies */
+
+	/* TODO: list all possible pairs of continuous tuples of length len */
+//	std::vector<std::pair<size_t, size_t> > GetTuples(const MSAclass &MSA,
+//			size_t len);
 
 };
 

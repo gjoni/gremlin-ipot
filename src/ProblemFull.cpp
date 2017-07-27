@@ -61,9 +61,7 @@ ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
 	Allocate();
 
 	memcpy(w, source.w, MSA->nrow * sizeof(double));
-	for (size_t i = 0; i < MSA->ncol; i++) {
-		memcpy(we[i], source.we[i], MSA->ncol * sizeof(double));
-	}
+	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(double));
 
 	return *this;
 

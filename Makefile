@@ -1,8 +1,8 @@
 
 CXX=g++
-CXXFLAGS += -O3 -mtune=native -Wall -pedantic -std=c++0x -g -ggdb
-CXXLIBS =
-INCDIRS = -lgsl -lgslcblas
+CXXFLAGS += -Wall -pedantic -O3 -mtune=native -std=c++0x -g -ggdb
+CXXLIBS = -lgsl -lgslcblas
+INCDIRS =
 LIBDIRS =
 
 OBJDIR = obj
@@ -29,4 +29,3 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 clean:
 	rm $(OBJS) gremlin3
 	rmdir $(OBJDIR)
-

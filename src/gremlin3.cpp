@@ -1,5 +1,5 @@
 #include <cstdio>
-//#include <unistd.h> // to parse program options
+#include <unistd.h>
 
 #include "RRCE.h"
 #include "EigenRRCE.h"
@@ -17,6 +17,23 @@
  * 6) constraints: mask (-m) OR unmask (-u) edges
  * 7) mrf file (out) */
 
+/* TODO: separate programs
+ * 1) gremlin3 - produces an MRF
+ * 2) score_patchdock
+ * 3) score_gramm
+ * 4) score_decoy */
+
+struct OPTS {
+	char *a3m; /* A3M file */
+	char *mtx; /* file with the computed contact matrix */
+	char *mrf; /* file to save MRF */
+	size_t niter; /* number of iterations */
+	double grow; /* gaps per row */
+	double gcol; /* gaps per col */
+	char *mask;
+	char *umask;
+};
+
 int main(int argc, char *argv[]) {
 
 	MSAclass MSA(argv[1]);
@@ -27,13 +44,12 @@ int main(int argc, char *argv[]) {
 
 	ProblemFull P(MSA);
 
-	MRFclass MRF = Minimizer::Minimize(P, 100);
+	MRFclass MRF = Minimizer::Minimize(P, 25);
 	MRF.Save("mrf.txt");
 
 	MRFprocessor::MTX result;
-
 	MRFprocessor::APC(MRF, result);
-	MRFprocessor::SaveMTX(result, "mtx2.txt");
+	MRFprocessor::SaveMTX(result, "mtx.txt");
 
 	return 0;
 

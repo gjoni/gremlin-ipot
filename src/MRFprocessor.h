@@ -16,10 +16,15 @@
 
 class MRFprocessor {
 private:
+
+//	const MSAclass *MSA;
+//	const MRFclass *MRF;
+
 	MRFprocessor();
 	~MRFprocessor();
 
 	static double FNorm(const double *x, size_t dim);
+	static void FN(const MRFclass &MRF, double **mtx);
 	static void APC(const MRFclass &MRF, double **mtx);
 
 public:
@@ -29,10 +34,17 @@ public:
 		size_t dim;
 	};
 
+	/* TODO */
+//	MRFprocessor(const MSAclass &MSA, const MRFclass &MRF);
+
+
 	/* TODO:
 	 * 1) selection of top contacts
 	 * 2) scoring of contacts by 'contact' score
 	 * 3) conversion into Rosetta constraints */
+
+	/* Frobenius norms of the 20x20 submatrices */
+	static void FN(const MRFclass &MRF, MTX &result);
 
 	/* average product correction */
 	static void APC(const MRFclass &MRF, MTX &result);

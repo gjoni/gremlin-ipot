@@ -46,10 +46,7 @@ ProblemBase::ProblemBase(const ProblemBase &source) :
 
 	memcpy(msa, source.msa, msa_dim * sizeof(unsigned char));
 	memcpy(w, source.w, MSA->nrow * sizeof(double));
-
-	for (size_t i = 0; i < MSA->ncol; i++) {
-		memcpy(we[i], source.we[i], MSA->ncol * sizeof(double));
-	}
+	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(double));
 
 }
 
@@ -127,7 +124,8 @@ void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
 		size_t i = MSA->GetMsaIdx(edge.first);
 		size_t j = MSA->GetMsaIdx(edge.second);
 		if (i < SIZE_MAX && j < SIZE_MAX) {
-			we[i][j] = we[j][i] = 0.0;
+			we[i * MSA->ncol + j] = 0.0;
+			we[j * MSA->ncol + i] = 0.0;
 		}
 
 	}
@@ -137,18 +135,15 @@ void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
 void ProblemBase::UnmaskEdges(const std::vector<std::pair<int, int> > &e) {
 
 	/* set all we[][] to 0.0 */
-	for (size_t i = 0; i < MSA->ncol; i++) {
-		for (size_t j = 0; j < MSA->ncol; j++) {
-			we[i][j] = 0.0;
-		}
-	}
+	memset(we, 0, MSA->ncol * MSA->ncol * sizeof(double));
 
 	/* mask the specified edges */
 	for (auto const& edge : e) {
 		size_t i = MSA->GetMsaIdx(edge.first);
 		size_t j = MSA->GetMsaIdx(edge.second);
 		if (i < SIZE_MAX && j < SIZE_MAX) {
-			we[i][j] = we[j][i] = 1.0;
+			we[i * MSA->ncol + j] = 1.0;
+			we[j * MSA->ncol + i] = 1.0;
 		}
 
 	}
@@ -158,10 +153,8 @@ void ProblemBase::UnmaskEdges(const std::vector<std::pair<int, int> > &e) {
 void ProblemBase::UnmaskAllEdges() {
 
 	/* set all we[][] to 1.0 */
-	for (size_t i = 0; i < MSA->ncol; i++) {
-		for (size_t j = 0; j < MSA->ncol; j++) {
-			we[i][j] = 1.0;
-		}
+	for (size_t i = 0; i < MSA->ncol * MSA->ncol; i++) {
+		we[i] = 1.0;
 	}
 
 }
@@ -169,26 +162,15 @@ void ProblemBase::UnmaskAllEdges() {
 void ProblemBase::AllocateBase() {
 
 	w = (double*) malloc(MSA->nrow * sizeof(double));
-	we = (double**) malloc(MSA->ncol * sizeof(double*));
-	for (size_t i = 0; i < MSA->ncol; i++) {
-		we[i] = (double*) malloc(MSA->ncol * sizeof(double));
-	}
+	we = (double*) malloc(MSA->ncol * MSA->ncol * sizeof(double));
 
 }
 
 void ProblemBase::FreeBase() {
 
-	if (we != NULL) {
-		for (size_t i = 0; i < MSA->ncol; i++) {
-			free(we[i]);
-		}
-		free(we);
-	}
 	free(w);
+	free(we);
 	free(msa);
-
-	w = NULL;
-	we = NULL;
 
 }
 

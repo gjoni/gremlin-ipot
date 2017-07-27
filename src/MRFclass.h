@@ -28,6 +28,7 @@ class MRFclass {
 	friend class MRFprocessor;
 
 private:
+
 	size_t dim; /* MRF dimension (sequence length) */
 
 	size_t dimh;
@@ -35,6 +36,8 @@ private:
 
 	double *h; /* dim * NAA */
 	double *J; /* dim * dim * NAA * NAA */
+
+	double *we; /* for masking or biasing */
 
 	void Allocate();
 	void Free();
@@ -44,6 +47,7 @@ public:
 	MRFclass();
 	MRFclass(const MRFclass &source);
 	MRFclass(double *h, double *J, size_t dim);
+	MRFclass(double *h, double *J, double *we, size_t dim);
 	MRFclass(const std::string &name); /* read MRF from file */
 	~MRFclass();
 
@@ -51,6 +55,7 @@ public:
 
 	size_t GetDim() const;
 
+	/* TODO: save we[] to file as well (change constructor correspondingly) */
 	void Save(const std::string &name) const;
 
 	/*

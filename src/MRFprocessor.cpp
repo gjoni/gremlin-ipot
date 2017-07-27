@@ -12,12 +12,11 @@
 #include "MSAclass.h"
 
 MRFprocessor::MRFprocessor() {
-	// TODO Auto-generated constructor stub
-
+	/* */
 }
 
 MRFprocessor::~MRFprocessor() {
-	// TODO Auto-generated destructor stub
+	/* */
 }
 
 double MRFprocessor::FNorm(const double *mat, size_t dim) {
@@ -30,8 +29,9 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 	mean /= dim * dim;
 
 	/* TODO: subtracting means gives almost no effect */
-	for (size_t a = 0; a < dim; a++) {
-		for (size_t b = 0; b < dim; b++) {
+
+	for (size_t a = 0; a < dim - 1; a++) {
+		for (size_t b = 0; b < dim - 1; b++) {
 			double m = mat[a * dim + b] - mean;
 			norm += m * m;
 		}
@@ -41,7 +41,7 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 
 }
 
-void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
+void MRFprocessor::FN(const MRFclass &MRF, double **mtx) {
 
 	size_t dim = MRF.GetDim();
 	size_t NAA = MSAclass::NAA;
@@ -57,6 +57,14 @@ void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
 			mtx[i][j] = FNorm(MRF.J + (i * dim + j) * NAA * NAA, NAA);
 		}
 	}
+
+}
+
+void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
+
+	size_t dim = MRF.GetDim();
+
+	FN(MRF, mtx);
 
 	/* row/col averages */
 	double *means = (double*) calloc(dim, sizeof(double));
@@ -107,6 +115,33 @@ void MRFprocessor::APC(const MRFclass &MRF, MTX &result) {
 	}
 
 	APC(MRF, mtx);
+
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			result.mtx1d[i * dim + j] = mtx[i][j];
+		}
+	}
+
+	for (size_t i = 0; i < dim; i++) {
+		free(mtx[i]);
+	}
+	free(mtx);
+
+}
+
+void MRFprocessor::FN(const MRFclass &MRF, MTX &result) {
+
+	size_t dim = MRF.GetDim();
+	result.dim = dim;
+
+	result.mtx1d.resize(dim * dim);
+
+	double **mtx = (double**) malloc(dim * sizeof(double*));
+	for (size_t i = 0; i < dim; i++) {
+		mtx[i] = (double*) malloc(dim * sizeof(double));
+	}
+
+	FN(MRF, mtx);
 
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
