@@ -28,7 +28,7 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 	}
 	mean /= dim * dim;
 
-	/* TODO: subtracting means gives almost no effect */
+	/* TODO: subtracting of means gives almost no effect */
 
 	for (size_t a = 0; a < dim - 1; a++) {
 		for (size_t b = 0; b < dim - 1; b++) {

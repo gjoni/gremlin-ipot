@@ -24,7 +24,7 @@ MRFclass::MRFclass(const MRFclass &s) :
 
 	memcpy(h, s.h, dimh * sizeof(double));
 	memcpy(J, s.J, dimJ * sizeof(double));
-	memcpy(we, s.we, dim * dim * sizeof(double));
+	memcpy(we, s.we, dim * dim * sizeof(bool));
 
 }
 
@@ -56,15 +56,15 @@ MRFclass::MRFclass(double *h_, double *J_, size_t dim_) :
 	}
 
 	for (size_t i = 0; i < dim * dim; i++) {
-		we[i] = 1.0;
+		we[i] = true;
 	}
 
 }
 
-MRFclass::MRFclass(double *h_, double *J_, double *we_, size_t dim_) :
+MRFclass::MRFclass(double *h_, double *J_, bool *we_, size_t dim_) :
 		MRFclass(h_, J_, dim_) {
 
-	memcpy(we, we_, dim * dim * sizeof(double));
+	memcpy(we, we_, dim * dim * sizeof(bool));
 
 }
 
@@ -87,10 +87,21 @@ MRFclass::MRFclass(const std::string &name) :
 	Allocate();
 
 	/* edge weights */
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = 0; j < dim; j++) {
-			fscanf(F, "%lf ", we + (i * dim + j));
+	{
+		size_t SIZE = dim + 2;
+		char *buf = (char*) malloc(SIZE * sizeof(char));
+		for (size_t i = 0; i < dim; i++) {
+			fgets(buf, SIZE, F);
+			for (size_t j = 0; j < dim; j++) {
+				char c = buf[j];
+				if (c == '1') {
+					we[i * dim + j] = true;
+				} else {
+					we[i * dim + j] = false;
+				}
+			}
 		}
+		free(buf);
 	}
 
 	/* local fields */
@@ -128,7 +139,7 @@ MRFclass& MRFclass::operator=(const MRFclass &source) {
 
 	memcpy(h, source.h, dimh * sizeof(double));
 	memcpy(J, source.J, dimJ * sizeof(double));
-	memcpy(we, source.we, dim * dim * sizeof(double));
+	memcpy(we, source.we, dim * dim * sizeof(bool));
 
 	return *this;
 
@@ -144,7 +155,7 @@ void MRFclass::Allocate() {
 
 	h = (double*) malloc(dimh * sizeof(double));
 	J = (double*) malloc(dimJ * sizeof(double));
-	we = (double*) malloc(dim * dim * sizeof(double));
+	we = (bool*) malloc(dim * dim * sizeof(bool));
 
 }
 
@@ -178,7 +189,11 @@ void MRFclass::Save(const std::string &name) const {
 	/* edge weights */
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
-			fprintf(F, "%.5e ", we[i * dim + j]);
+			if (we[i * dim + j] == 1) {
+				fputc('1', F);
+			} else {
+				fputc('0', F);
+			}
 		}
 		fprintf(F, "\n");
 	}

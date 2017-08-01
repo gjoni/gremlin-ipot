@@ -332,11 +332,20 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		}
 	}
 
-	/* set gradients to zero for self-edges */
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {
+
+				/* set gradients to zero for self-edges */
 				g2[((b * ncol + k) * NAA + a) * ncol + k] = 0;
+
+				/* set gradient for masked edges to zero */
+				for (size_t j = 0; j < ncol; j++) {
+					if (we[k * ncol + j] == false) {
+						g2[((b * ncol + k) * NAA + a) * ncol + j] = 0.0;
+					}
+				}
+
 			}
 		}
 	}
@@ -349,7 +358,7 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		g->data[v] += 2.0 * lsingle * x->data[v];
 	}
 
-	/* regulariz J */
+	/* regularize J */
 	for (size_t v = nsingle; v < dim; v++) {
 		reg += 0.5 * lpair * x->data[v] * x->data[v];
 		g->data[v] += 2.0 * lpair * x->data[v];

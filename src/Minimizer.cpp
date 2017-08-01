@@ -47,15 +47,14 @@ MRFclass Minimizer::Minimize(ProblemBase &P, int niter) {
 	gsl_multimin_fdfminimizer *s;
 	s = gsl_multimin_fdfminimizer_alloc(T, dim);
 
-	gsl_vector *x = gsl_vector_alloc(dim);
-	memset(x->data, 0, dim * sizeof(double));
+	memset(s->x->data, 0, dim * sizeof(double));
 
-	gsl_multimin_fdfminimizer_set(s, &gsl_func, x, 10.0, 0.1);
+	gsl_multimin_fdfminimizer_set(s, &gsl_func, s->x, 10.0, 0.1);
 
 	printf("# %-8s%-14s%-12s%-12s%-12s%-12s\n", "iter", "f(x)", "||x||",
 			"||dx||", "step", "reltol");
 
-	printf("# %-8d%-10.2f\n", 0, gsl_func.f /* f_full_gpl */(x, &P));
+	printf("# %-8d%-10.2f\n", 0, gsl_func.f /* f_full_gpl */(s->x, &P));
 
 	int status, iter = 0;
 	do {
@@ -88,11 +87,10 @@ MRFclass Minimizer::Minimize(ProblemBase &P, int niter) {
 
 	/* save results */
 	MRFclass MRF(s->x->data, s->x->data + P.MSA->GetNcol() * MSAclass::NAA,
-			P.MSA->GetNcol());
+			P.we, P.MSA->GetNcol());
 
 	/* clean memory */
 	gsl_multimin_fdfminimizer_free(s);
-	gsl_vector_free(x);
 
 	return MRF;
 

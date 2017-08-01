@@ -12,8 +12,8 @@ DEPS = $(shell find $(SRCDIR) -name '*.h')
 SRCS = $(shell find $(SRCDIR) -name '*.cpp')
 OBJS = $(patsubst $(SRCDIR)%.cpp, $(OBJDIR)%.o, $(SRCS))
 
-#objrrce=obj/rrce.o
-#objaace=obj/aace.o
+objgr=obj/gremlin3.o
+objsg=obj/score_gramm.o
 
 all: $(OBJDIR) gremlin3
 
@@ -21,11 +21,14 @@ $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 gremlin3: $(OBJS) $(DEPS)
-	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o gremlin3 $(OBJS) $(CXXLIBS)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o gremlin3 $(filter-out $(objsg), $(OBJS)) $(CXXLIBS)
+
+#score_gramm: $(OBJS) $(DEPS)
+#	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o score_gramm $(filter-out $(objgr), $(OBJS)) $(CXXLIBS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c -o $@ $<
 
 clean:
-	rm $(OBJS) gremlin3
+	rm $(OBJS) gremlin3 score_gramm
 	rmdir $(OBJDIR)

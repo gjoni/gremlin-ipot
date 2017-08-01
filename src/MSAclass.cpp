@@ -332,6 +332,9 @@ void MSAclass::CleanMsa(double rgaps, double cgaps) {
 	CleanRows(rgaps);
 	CleanCols(cgaps);
 
+	printf("# Initial MSA: %ld x %ld\n", len_ref, a3m.size());
+	printf("# Cleaned MSA: %ld x %ld\n", ncol, nrow);
+
 }
 
 void MSAclass::SaveMSA(const std::string &name) const {
@@ -393,5 +396,11 @@ std::vector<std::pair<size_t, size_t> > MSAclass::CastToMsa(
 	}
 
 	return contacts_new;
+
+}
+
+size_t MSAclass::GetLen() const {
+
+	return len_ref;
 
 }

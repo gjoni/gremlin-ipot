@@ -85,6 +85,7 @@ public:
 	/* cleaned MSA dimensions */
 	size_t GetNrow() const;
 	size_t GetNcol() const;
+	size_t GetLen() const;
 
 	/* A3M->MSA mapping*/
 	size_t GetMsaIdx(size_t idx) const;

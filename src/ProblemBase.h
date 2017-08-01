@@ -32,7 +32,9 @@ protected:
 	size_t dim; /* problem dimension (number of variables) */
 
 	double *w; /* sequence weights */
-	double *we; /* for masking or biasing (2D array in 1D representation)*/
+
+	/* TODO: change to bool* */
+	bool *we; /* for masking (2D array in 1D representation)*/
 
 	void AllocateBase();
 	void FreeBase();

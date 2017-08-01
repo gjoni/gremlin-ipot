@@ -46,7 +46,7 @@ ProblemBase::ProblemBase(const ProblemBase &source) :
 
 	memcpy(msa, source.msa, msa_dim * sizeof(unsigned char));
 	memcpy(w, source.w, MSA->nrow * sizeof(double));
-	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(double));
+	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(bool));
 
 }
 
@@ -124,8 +124,8 @@ void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
 		size_t i = MSA->GetMsaIdx(edge.first);
 		size_t j = MSA->GetMsaIdx(edge.second);
 		if (i < SIZE_MAX && j < SIZE_MAX) {
-			we[i * MSA->ncol + j] = 0.0;
-			we[j * MSA->ncol + i] = 0.0;
+			we[i * MSA->ncol + j] = false;
+			we[j * MSA->ncol + i] = false;
 		}
 
 	}
@@ -134,27 +134,26 @@ void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
 
 void ProblemBase::UnmaskEdges(const std::vector<std::pair<int, int> > &e) {
 
-	/* set all we[][] to 0.0 */
-	memset(we, 0, MSA->ncol * MSA->ncol * sizeof(double));
+	/* set all we[][] to false */
+	memset(we, 0, MSA->ncol * MSA->ncol * sizeof(bool));
 
 	/* mask the specified edges */
 	for (auto const& edge : e) {
 		size_t i = MSA->GetMsaIdx(edge.first);
 		size_t j = MSA->GetMsaIdx(edge.second);
 		if (i < SIZE_MAX && j < SIZE_MAX) {
-			we[i * MSA->ncol + j] = 1.0;
-			we[j * MSA->ncol + i] = 1.0;
+			we[i * MSA->ncol + j] = true;
+			we[j * MSA->ncol + i] = true;
 		}
-
 	}
 
 }
 
 void ProblemBase::UnmaskAllEdges() {
 
-	/* set all we[][] to 1.0 */
+	/* set all we[][] to true */
 	for (size_t i = 0; i < MSA->ncol * MSA->ncol; i++) {
-		we[i] = 1.0;
+		we[i] = true;
 	}
 
 }
@@ -162,7 +161,7 @@ void ProblemBase::UnmaskAllEdges() {
 void ProblemBase::AllocateBase() {
 
 	w = (double*) malloc(MSA->nrow * sizeof(double));
-	we = (double*) malloc(MSA->ncol * MSA->ncol * sizeof(double));
+	we = (bool*) malloc(MSA->ncol * MSA->ncol * sizeof(bool));
 
 }
 
