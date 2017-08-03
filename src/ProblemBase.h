@@ -60,10 +60,10 @@ public:
 	 */
 
 	/* set e[i,j] to 0, all others to 1 */
-	void MaskEdges(const std::vector<std::pair<int, int> > &e);
+	void MaskEdges(const std::vector<std::pair<size_t, size_t> > &e);
 
 	/* set e[i,j] to 1, all others to 0 */
-	void UnmaskEdges(const std::vector<std::pair<int, int> > &e);
+	void UnmaskEdges(const std::vector<std::pair<size_t, size_t> > &e);
 
 	/* default */
 	void UnmaskAllEdges();

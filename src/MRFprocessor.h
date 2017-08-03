@@ -49,6 +49,9 @@ public:
 	/* average product correction */
 	static void APC(const MRFclass &MRF, MTX &result);
 
+	/* TODO: APC for a submatrix */
+//	static void APC(const MRFclass &MRF, MTX &result, size_t shift);
+
 	/* save to file */
 	static void SaveMTX(const MTX &result, const std::string &name);
 

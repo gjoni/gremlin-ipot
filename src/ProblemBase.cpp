@@ -114,7 +114,7 @@ void ProblemBase::Reweight(double t) {
 
 }
 
-void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
+void ProblemBase::MaskEdges(const std::vector<std::pair<size_t, size_t> > &e) {
 
 	/* set all we[][] to 1.0 */
 	UnmaskAllEdges();
@@ -132,7 +132,8 @@ void ProblemBase::MaskEdges(const std::vector<std::pair<int, int> > &e) {
 
 }
 
-void ProblemBase::UnmaskEdges(const std::vector<std::pair<int, int> > &e) {
+void ProblemBase::UnmaskEdges(
+		const std::vector<std::pair<size_t, size_t> > &e) {
 
 	/* set all we[][] to false */
 	memset(we, 0, MSA->ncol * MSA->ncol * sizeof(bool));

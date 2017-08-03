@@ -22,6 +22,8 @@
  * TODO: ??? What to do with masked edges ???
  */
 
+/* TODO: save mapping to ref. -- will solve the above two problems */
+
 class MRFclass {
 
 	friend class Minimizer;
