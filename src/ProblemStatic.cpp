@@ -19,14 +19,14 @@ ProblemStatic::~ProblemStatic() {
 double ProblemStatic::f(const gsl_vector *x, void *par) {
 
 	ProblemBase *P = (ProblemBase*) par;
-	return P->f(x);
+	return P->f(x->data);
 
 }
 
 void ProblemStatic::df(const gsl_vector *x, void *par, gsl_vector *g) {
 
 	ProblemBase *P = (ProblemBase*) par;
-	P->df(x, g);
+	P->df(x->data, g->data);
 
 }
 
@@ -34,6 +34,6 @@ void ProblemStatic::fdf(const gsl_vector *x, void *par, double *f,
 		gsl_vector *g) {
 
 	ProblemBase *P = (ProblemBase*) par;
-	P->fdf(x, f, g);
+	P->fdf(x->data, f, g->data);
 
 }

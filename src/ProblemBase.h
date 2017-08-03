@@ -12,8 +12,6 @@
 #include <vector>
 #include <utility>
 
-#include <gsl/gsl_vector.h>
-
 #include "MSAclass.h"
 
 /*
@@ -33,7 +31,6 @@ protected:
 
 	double *w; /* sequence weights */
 
-	/* TODO: change to bool* */
 	bool *we; /* for masking (2D array in 1D representation)*/
 
 	void AllocateBase();
@@ -48,10 +45,9 @@ public:
 
 //	ProblemBase& operator=(const ProblemBase &source);
 
-	/* TODO: get rid of gsl_vectors (substitute with double*) */
-	virtual double f(const gsl_vector *x) = 0;
-	virtual void df(const gsl_vector *x, gsl_vector *g) = 0;
-	virtual void fdf(const gsl_vector *x, double *f, gsl_vector *g) = 0;
+	virtual double f(const double *x) = 0;
+	virtual void df(const double *x, double *g) = 0;
+	virtual void fdf(const double *x, double *f, double *g) = 0;
 
 	void Reweight(double t = 0.8);
 
