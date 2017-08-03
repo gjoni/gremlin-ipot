@@ -10,6 +10,7 @@
 #include <cassert>
 
 #include "ProblemFull.h"
+#include <omp.h>
 
 ProblemFull::ProblemFull() :
 		ProblemBase(), lsingle(0.0), lpair(0.0), dim2body(0), gaux(NULL) {
@@ -115,14 +116,14 @@ void ProblemFull::Free() {
  *    ...
  */
 
-void ProblemFull::df(const gsl_vector *x, gsl_vector *g) {
+void ProblemFull::df(const double *x, double *g) {
 
 	double f;
 	fdf(x, &f, g);
 
 }
 
-double ProblemFull::f(const gsl_vector *x) {
+double ProblemFull::f(const double *x) {
 
 	double f = 0.0;
 
@@ -132,8 +133,8 @@ double ProblemFull::f(const gsl_vector *x) {
 
 	size_t nsingle = ncol * NAA;
 
-	const double *x1 = x->data; /* local fields Vi */
-	const double *x2 = x->data + nsingle; /* couplings Wij */
+	const double *x1 = x; /* local fields Vi */
+	const double *x2 = x + nsingle; /* couplings Wij */
 
 	/* loop over all sequences in the MSA */
 	for (size_t i = 0; i < nrow; i++) {
@@ -193,11 +194,11 @@ double ProblemFull::f(const gsl_vector *x) {
 	/* regularization */
 	double reg = 0.0;
 	for (size_t v = 0; v < nsingle; v++) {
-		reg += lsingle * x->data[v] * x->data[v];
+		reg += lsingle * x[v] * x[v];
 	}
 
 	for (size_t v = nsingle; v < dim; v++) {
-		reg += 0.5 * lpair * x->data[v] * x->data[v];
+		reg += 0.5 * lpair * x[v] * x[v];
 	}
 
 	f += reg;
@@ -206,7 +207,7 @@ double ProblemFull::f(const gsl_vector *x) {
 
 }
 
-void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
+void ProblemFull::fdf(const double *x, double *f, double *g) {
 
 	size_t ncol = MSA->ncol;
 	size_t nrow = MSA->nrow;
@@ -214,18 +215,19 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 
 	size_t nsingle = ncol * NAA;
 
-	const double *x1 = x->data; /* local fields Vi */
-	const double *x2 = x->data + nsingle; /* couplings Wij */
+	const double *x1 = x; /* local fields Vi */
+	const double *x2 = x + nsingle; /* couplings Wij */
 
-	double *g1 = g->data;
-	double *g2 = g->data + nsingle;
+	double *g1 = g;
+	double *g2 = g + nsingle;
 
 	/* set fx and gradient to 0 initially */
 	*f = 0.0;
-	memset(g->data, 0, sizeof(double) * dim);
+	memset(g, 0, sizeof(double) * dim);
 	memset(gaux, 0, sizeof(double) * dim2body);
 
 	/* loop over all sequences in the MSA */
+#pragma omp parallel for
 	for (size_t i = 0; i < nrow; i++) {
 
 		double weight = w[i];
@@ -234,15 +236,24 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		/* precomputed energies of every letter
 		 * at every position in the sequence */
 		double *e = (double*) malloc(NAA * ncol * sizeof(double));
+		if (e == NULL) {
+			printf("Error: not enough memory\n");
+		}
 
 		/* logarithm of local partition functions
 		 * (aka one-site pseudo-log-likelihoods
 		 * or local free energies) */
 		double *lp = (double*) malloc(ncol * sizeof(double));
+		if (lp == NULL) {
+			printf("Error: not enough memory\n");
+		}
 
 		/* local probabilities of specific AA
 		 * at every position in the sequence*/
 		double *p = (double*) malloc(NAA * ncol * sizeof(double));
+		if (p == NULL) {
+			printf("Error: not enough memory\n");
+		}
 
 		/* initialize energies with local fields */
 		memcpy(e, x1, ncol * (NAA - 1) * sizeof(double));
@@ -279,6 +290,7 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		}
 
 		/* compute f and derivatives of h[] */
+#pragma omp critical
 		for (size_t k = 0; k < ncol; k++) {
 
 			unsigned char xik = seq[k];
@@ -296,6 +308,7 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		}
 
 		/* derivatives of J[][] */
+#pragma omp critical
 		for (size_t k = 0; k < ncol; k++) {
 
 			double *gaux_p = gaux + (seq[k] * ncol + k) * NAA * ncol;
@@ -332,6 +345,7 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 		}
 	}
 
+#pragma omp parallel for ordered
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {
@@ -353,15 +367,17 @@ void ProblemFull::fdf(const gsl_vector *x, double *f, gsl_vector *g) {
 	double reg = 0.0;
 
 	/* regularize h */
+#pragma omp parallel for ordered reduction (+:reg)
 	for (size_t v = 0; v < nsingle; v++) {
-		reg += lsingle * x->data[v] * x->data[v];
-		g->data[v] += 2.0 * lsingle * x->data[v];
+		reg += lsingle * x[v] * x[v];
+		g[v] += 2.0 * lsingle * x[v];
 	}
 
 	/* regularize J */
+#pragma omp parallel for ordered reduction (+:reg)
 	for (size_t v = nsingle; v < dim; v++) {
-		reg += 0.5 * lpair * x->data[v] * x->data[v];
-		g->data[v] += 2.0 * lpair * x->data[v];
+		reg += 0.5 * lpair * x[v] * x[v];
+		g[v] += 2.0 * lpair * x[v];
 	}
 
 	*f += reg;

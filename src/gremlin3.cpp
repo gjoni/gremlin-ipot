@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <ctime>
 #include <cstring>
-#include <algorithm>
 
 #include "RRCE.h"
 #include "EigenRRCE.h"
@@ -12,7 +11,6 @@
 #include "MRFprocessor.h"
 
 /* TODO: separate programs
- * 0) get_constraints
  * 1) gremlin3 - produces an MRF
  * 2) score_patchdock
  * 3) score_gramm
@@ -20,7 +18,7 @@
 
 /* TODO: issues
  *   - multiple copies of h,J (huge memory overhead) ???
- *   - minimizer requires a lot of memory (GSL has BFGS, not L-BFGS)
+ *   - minimizer requires a lot of memory
  */
 
 struct OPTS {
@@ -37,62 +35,48 @@ struct OPTS {
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
-std::vector<std::pair<size_t, size_t> > ReadPairs(const char *name);
 
 int main(int argc, char *argv[]) {
 
-	/*
-	 * process command line options
-	 */
 	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 1 };
+
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
 	}
 
-	/*
-	 * read and clean MSA
-	 */
 	MSAclass MSA(opts.a3m);
+
 	MSA.CleanMsa(opts.grow, opts.gcol);
 
-	/*
-	 * solve the problem
-	 */
 	ProblemFull P(MSA);
-	MRFclass MRF = Minimizer::Minimize(P, opts.niter);
 
 	/*
-	 * save MRF
+	 srand(time(NULL));
+	 std::vector<std::pair<int, int> > e;
+	 for (int i = 0; i < 500; i++) {
+	 int a = rand() % MSA.GetLen();
+	 int b = rand() % MSA.GetLen();
+	 if (a > b) {
+	 e.push_back(std::make_pair(b, a));
+	 }
+	 if (a < b) {
+	 e.push_back(std::make_pair(a, b));
+	 }
+	 }
+	 P.UnmaskEdges(e);
 	 */
+
+	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
+
 	if (opts.mrf != NULL) {
 		MRF.Save(opts.mrf);
 	}
 
-	/*
-	 * mask edges from the list
-	 */
-	if (opts.mask != NULL) {
-		std::vector<std::pair<size_t, size_t> > e = ReadPairs(opts.mask);
-		P.MaskEdges(e);
-	}
-
-	/*
-	 * unmask edges from the list
-	 * (mask all that are not in the list)
-	 */
-	if (opts.umask != NULL) {
-		std::vector<std::pair<size_t, size_t> > e = ReadPairs(opts.umask);
-		P.UnmaskEdges(e);
-	}
-
-	/*
-	 * save predicted contact map
-	 */
 	if (opts.mtx != NULL) {
 		MRFprocessor::MTX result;
 		switch (opts.rmode) {
-		case 1: /* APC */
+		case 1:
 			MRFprocessor::APC(MRF, result);
 			break;
 		case 2:
@@ -163,7 +147,7 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				printf("Error: wrong matrix correction mode '%s'\n", optarg);
 				return false;
 			}
-//			opts.umask = optarg;
+			opts.umask = optarg;
 			break;
 		default:
 			return false;
@@ -174,12 +158,6 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 	if (opts.a3m == NULL) {
 		printf("Error: A3M file not specified\n");
 		return false;
-	}
-
-	if (opts.mask != NULL && opts.umask != NULL) {
-		printf(
-				"Error: cannot process both lists - set either '-m' or '-u', not both");
-		exit(1);
 	}
 
 	return true;
@@ -193,40 +171,10 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -o matrix.txt (output)\n");
 	printf("          -f mrf.txt (output)\n");
 	printf("          -n number of iterations (%ld)\n", opts.niter);
-	printf("          -g gaps per row [0;1) (%.2lf)\n", opts.grow);
+	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
-	printf("          -m list1.txt - residue pairs to be masked\n");
-	printf("          -u list2.txt - residue pairs to be unmasked\n");
+//	printf("          -m list1.txt - residue pairs to be masked\n");
+//	printf("          -u list2.txt - residue pairs to be unmasked\n");
 	printf("          -R contact matrix correction {APC,FN,...} (APC)\n");
-
-}
-
-std::vector<std::pair<size_t, size_t> > ReadPairs(const char *name) {
-
-	std::vector<std::pair<size_t, size_t> > vec;
-
-	FILE *F = fopen(name, "r");
-	if (F == NULL) {
-		printf("Error: cannot open list file '%s'\n", name);
-		exit(1);
-	}
-
-	size_t a, b;
-	while (fscanf(F, "%lu %lu\n", &a, &b) == 2) {
-		if (a < b) {
-			vec.push_back(std::make_pair(a, b));
-		} else if (b < a) {
-			vec.push_back(std::make_pair(b, a));
-		}
-	}
-	fclose(F);
-
-	/* remove redundancy */
-	std::sort(vec.begin(), vec.end());
-	std::vector<std::pair<size_t, size_t> >::iterator it = std::unique(
-			vec.begin(), vec.end());
-	vec.resize(std::distance(vec.begin(), it));
-
-	return vec;
 
 }

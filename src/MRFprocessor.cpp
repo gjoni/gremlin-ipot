@@ -51,7 +51,7 @@ void MRFprocessor::FN(const MRFclass &MRF, double **mtx) {
 		memset(mtx[i], 0, dim * sizeof(double));
 	}
 
-	/* Frobenius norms of 21x21 submatrices */
+	/* Frobenius norms of 20x20 submatrices */
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
 			mtx[i][j] = FNorm(MRF.J + (i * dim + j) * NAA * NAA, NAA);
@@ -83,6 +83,14 @@ void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
 			mtx[i][j] -= (means[i] * means[j]) / meansum;
+//			if (mtx[i][j] < min) {
+//				min = mtx[i][j];
+//			}
+		}
+	}
+
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
 			if (mtx[i][j] < min) {
 				min = mtx[i][j];
 			}

@@ -26,6 +26,8 @@ private:
 
 	/* aux array to store asymmetric gradient */
 	size_t dim2body;
+
+	/* TODO: ??? do we really need this array ??? */
 	double *gaux;
 
 	void Allocate();
@@ -44,11 +46,9 @@ public:
 
 	ProblemFull& operator=(const ProblemFull &source);
 
-	/* TODO: include edge masks we[] in the calculations */
-	/* TODO: change gsl_vector to double* */
-	double f(const gsl_vector *x);
-	void df(const gsl_vector *x, gsl_vector *g);
-	void fdf(const gsl_vector *x, double *f, gsl_vector *g);
+	double f(const double *x);
+	void df(const double *x, double *g);
+	void fdf(const double *x, double *f, double *g);
 
 };
 
