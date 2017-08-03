@@ -6,11 +6,11 @@
  */
 
 #include <cstring>
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_blas.h>
+
+#include "lbfgs.h"
 
 #include "Minimizer.h"
-#include "ProblemStatic.h"
+//#include "ProblemStatic.h"
 #include "MRFclass.h"
 
 Minimizer::Minimizer() {
@@ -22,7 +22,7 @@ Minimizer::~Minimizer() {
 	// TODO Auto-generated destructor stub
 }
 
-MRFclass Minimizer::Minimize(ProblemBase &P, int niter) {
+MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 
 	size_t dim = P.GetDim();
 
@@ -31,67 +31,64 @@ MRFclass Minimizer::Minimize(ProblemBase &P, int niter) {
 		exit(1);
 	}
 
-//	double f = 0.0;
+	printf("# number of vars: %lu (%.1fMB)\n", dim, 8.0 * dim / 1024 / 1024);
 
-	gsl_multimin_function_fdf gsl_func;
+	lbfgsfloatval_t fx;
+	lbfgsfloatval_t *m_x = lbfgs_malloc(dim);
 
-	gsl_func.n = dim;
-	gsl_func.f = ProblemStatic::f;
-	gsl_func.df = ProblemStatic::df;
-	gsl_func.fdf = ProblemStatic::fdf;
-	gsl_func.params = &P;
+	if (m_x == NULL) {
+		printf("ERROR: Failed to allocate a memory block for variables.\n");
+		exit(1);
+	}
 
-	const gsl_multimin_fdfminimizer_type *T;
-	T = gsl_multimin_fdfminimizer_vector_bfgs2;
+	/* init the variables */
+	memset(m_x, 0, dim * sizeof(lbfgsfloatval_t));
 
-	gsl_multimin_fdfminimizer *s;
-	s = gsl_multimin_fdfminimizer_alloc(T, dim);
+	printf("# %-8s%-14s%-12s%-12s%-8s%-12s\n", "iter", "f(x)", "||x||",
+			"||g||", "neval", "epsilon");
 
-	memset(s->x->data, 0, dim * sizeof(double));
+	printf("# %-8d%-10.3e\n", 0, P.f(m_x));
 
-	gsl_multimin_fdfminimizer_set(s, &gsl_func, s->x, 10.0, 0.1);
+	lbfgs_parameter_t param;
+	lbfgs_parameter_init(&param);
+	param.max_iterations = niter;
+	param.epsilon = 0.1;
+	param.m = 3;
 
-	printf("# %-8s%-14s%-12s%-12s%-12s%-12s\n", "iter", "f(x)", "||x||",
-			"||dx||", "step", "reltol");
+	int ret = lbfgs(dim, m_x, &fx, _evaluate, _progress, &P, &param);
+	printf("# L-BFGS optimization terminated with status code = %d", ret);
+	if (ret == -997) {
+		printf(" (LBFGSERR_MAXIMUMITERATION)");
+	}
+	printf("\n");
 
-	printf("# %-8d%-10.2f\n", 0, gsl_func.f /* f_full_gpl */(s->x, &P));
+	MRFclass MRF(m_x, m_x + P.MSA->GetNcol() * MSAclass::NAA, P.we,
+			P.MSA->GetNcol());
 
-	int status, iter = 0;
-	do {
-		iter++;
-
-		status = gsl_multimin_fdfminimizer_iterate(s);
-		if (status) {
-			break;
-		}
-		status = gsl_multimin_test_gradient(s->gradient, 1e-1);
-
-		double xnorm = gsl_blas_dnrm2(s->x);
-		double gnorm = gsl_blas_dnrm2(s->gradient);
-		double snorm = gsl_blas_dnrm2(s->dx); /* step */
-
-		printf("# %-8d%-10.2f    %-10.2f  %-10.2f  %-10.2f  %-10.5f\n", iter,
-				s->f, xnorm, gnorm, snorm, snorm / xnorm);
-
-		if (status == GSL_SUCCESS) {
-			printf("# Minimum found at iteration %d!!!\n", iter);
-		}
-
-		fflush(stdout);
-
-	} while (status == GSL_CONTINUE && iter < niter);
-
-	/*
-	 * minimization protocol
-	 */
-
-	/* save results */
-	MRFclass MRF(s->x->data, s->x->data + P.MSA->GetNcol() * MSAclass::NAA,
-			P.we, P.MSA->GetNcol());
-
-	/* clean memory */
-	gsl_multimin_fdfminimizer_free(s);
+	lbfgs_free(m_x);
 
 	return MRF;
 
 }
+
+lbfgsfloatval_t Minimizer::_evaluate(void *instance, const lbfgsfloatval_t *x,
+		lbfgsfloatval_t *g, const int n, const lbfgsfloatval_t step) {
+
+	ProblemBase *_P = (ProblemBase*) instance;
+	lbfgsfloatval_t f;
+	_P->fdf(x, &f, g);
+	return f;
+
+}
+
+int Minimizer::_progress(void *instance, const lbfgsfloatval_t *x,
+		const lbfgsfloatval_t *g, const lbfgsfloatval_t fx,
+		const lbfgsfloatval_t xnorm, const lbfgsfloatval_t gnorm,
+		const lbfgsfloatval_t step, int n, int k, int ls) {
+
+	printf("# %-8d%-10.3e    %-10.3e  %-10.3e  %-6d  %-10.5f\n", k, fx,
+			xnorm, gnorm, ls, gnorm / xnorm);
+
+	return 0;
+}
+

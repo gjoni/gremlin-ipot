@@ -26,6 +26,8 @@ private:
 
 	/* aux array to store asymmetric gradient */
 	size_t dim2body;
+
+	/* TODO: ??? do we really need this array ??? */
 	double *gaux;
 
 	void Allocate();

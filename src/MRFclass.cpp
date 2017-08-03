@@ -161,9 +161,15 @@ void MRFclass::Allocate() {
 
 void MRFclass::Free() {
 
-	free(h);
-	free(J);
-	free(we);
+	if (h != NULL) {
+		free(h);
+	}
+	if (J != NULL) {
+		free(J);
+	}
+	if (we != NULL) {
+		free(we);
+	}
 
 }
 

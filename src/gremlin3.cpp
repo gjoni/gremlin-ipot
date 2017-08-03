@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 	 P.UnmaskEdges(e);
 	 */
 
-	MRFclass MRF = Minimizer::Minimize(P, opts.niter);
+	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
 
 	if (opts.mrf != NULL) {
 		MRF.Save(opts.mrf);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 	if (opts.mtx != NULL) {
 		MRFprocessor::MTX result;
 		switch (opts.rmode) {
-		case 1: /* APC */
+		case 1:
 			MRFprocessor::APC(MRF, result);
 			break;
 		case 2:
@@ -171,7 +171,7 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -o matrix.txt (output)\n");
 	printf("          -f mrf.txt (output)\n");
 	printf("          -n number of iterations (%ld)\n", opts.niter);
-	printf("          -g gaps per row [0;1) (%.2lf)\n", opts.grow);
+	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
 //	printf("          -m list1.txt - residue pairs to be masked\n");
 //	printf("          -u list2.txt - residue pairs to be unmasked\n");
