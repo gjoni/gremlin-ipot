@@ -5,11 +5,16 @@
  *      Author: ivan
  */
 
-// Standard GREMLIN2 protocol with L2 regularization
-// The code for computing the objective function and gradients
-// is largely adopted from CCMpred by J.Soeding group
-// https://github.com/soedinglab/CCMpred
-// V20170720 - first functional class
+/*
+ * Standard GREMLIN2 protocol with L2 regularization
+ * The code for computing the objective function and gradients
+ * is largely adopted from CCMpred by J.Soeding group
+ * https://github.com/soedinglab/CCMpred
+ * -----
+ * V20170804 - alpha version
+ * V20170720 - first functional class
+ */
+
 #ifndef PROBLEMFULL_H_
 #define PROBLEMFULL_H_
 
@@ -24,14 +29,9 @@ private:
 	double lsingle;
 	double lpair;
 
-	/* aux array to store asymmetric gradient */
+	/* Vi and Wij dimensions */
+	size_t dim1body;
 	size_t dim2body;
-
-	/* TODO: ??? do we really need this array ??? */
-	double *gaux;
-
-	void Allocate();
-	void Free();
 
 public:
 
@@ -43,7 +43,6 @@ public:
 	/* TODO: set reg. parameters */
 //	void SetLH();
 //	void SetLJ();
-
 	ProblemFull& operator=(const ProblemFull &source);
 
 	double f(const double *x);

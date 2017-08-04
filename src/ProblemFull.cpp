@@ -13,7 +13,7 @@
 #include <omp.h>
 
 ProblemFull::ProblemFull() :
-		ProblemBase(), lsingle(0.0), lpair(0.0), dim2body(0), gaux(NULL) {
+		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0) {
 
 	/* nothing to be done */
 
@@ -25,26 +25,23 @@ ProblemFull::ProblemFull(const MSAclass &MSA_) :
 	lsingle = 0.01;
 	lpair = 0.2 * (MSA->ncol - 1);
 
-	dim = MSA->ncol * MSAclass::NAA * (1 + MSA->ncol * MSAclass::NAA);
+	dim1body = MSA->ncol * MSAclass::NAA;
 	dim2body = MSA->ncol * MSAclass::NAA * MSA->ncol * MSAclass::NAA;
-
-	Allocate();
+	dim = dim1body + dim2body;
 
 }
 
 ProblemFull::ProblemFull(const ProblemFull &source) :
-		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim2body(
-				source.dim2body), gaux(NULL) {
+		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim1body(
+				source.dim1body), dim2body(source.dim2body) {
 
-	Allocate();
-
-	memcpy(gaux, source.gaux, dim2body * sizeof(double));
+	/* */
 
 }
 
 ProblemFull::~ProblemFull() {
 
-	Free();
+	/* */
 
 }
 
@@ -53,30 +50,19 @@ ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
 	assert(this != &source); /* an attempt to assign Residue to itself */
 
 	FreeBase();
-	Free();
 
 	dim = source.dim;
+	dim1body = source.dim1body;
+	dim2body = source.dim2body;
+
 	MSA = source.MSA;
 
 	AllocateBase();
-	Allocate();
 
 	memcpy(w, source.w, MSA->nrow * sizeof(double));
 	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(double));
 
 	return *this;
-
-}
-
-void ProblemFull::Allocate() {
-
-	gaux = (double*) malloc(dim2body * sizeof(double));
-
-}
-
-void ProblemFull::Free() {
-
-	free(gaux);
 
 }
 
@@ -131,10 +117,8 @@ double ProblemFull::f(const double *x) {
 	size_t nrow = MSA->nrow;
 	size_t NAA = MSAclass::NAA;
 
-	size_t nsingle = ncol * NAA;
-
 	const double *x1 = x; /* local fields Vi */
-	const double *x2 = x + nsingle; /* couplings Wij */
+	const double *x2 = x + dim1body; /* couplings Wij */
 
 	/* loop over all sequences in the MSA */
 	for (size_t i = 0; i < nrow; i++) {
@@ -193,11 +177,11 @@ double ProblemFull::f(const double *x) {
 
 	/* regularization */
 	double reg = 0.0;
-	for (size_t v = 0; v < nsingle; v++) {
+	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 	}
 
-	for (size_t v = nsingle; v < dim; v++) {
+	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 	}
 
@@ -213,18 +197,18 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 	size_t nrow = MSA->nrow;
 	size_t NAA = MSAclass::NAA;
 
-	size_t nsingle = ncol * NAA;
-
 	const double *x1 = x; /* local fields Vi */
-	const double *x2 = x + nsingle; /* couplings Wij */
+	const double *x2 = x + dim1body; /* couplings Wij */
 
 	double *g1 = g;
-	double *g2 = g + nsingle;
+	double *g2 = g + dim1body;
 
 	/* set fx and gradient to 0 initially */
 	*f = 0.0;
 	memset(g, 0, sizeof(double) * dim);
-	memset(gaux, 0, sizeof(double) * dim2body);
+
+	/* aux array to store asymmetric 2-body gradient */
+	double *gaux = (double*) calloc(dim2body, sizeof(double));
 
 	/* loop over all sequences in the MSA */
 #pragma omp parallel for
@@ -248,7 +232,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 			printf("Error: not enough memory\n");
 		}
 
-		/* local probabilities of specific AA
+		/* local probabilities of a every letter
 		 * at every position in the sequence*/
 		double *p = (double*) malloc(NAA * ncol * sizeof(double));
 		if (p == NULL) {
@@ -364,18 +348,20 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
+	free(gaux);
+
 	double reg = 0.0;
 
 	/* regularize h */
 #pragma omp parallel for ordered reduction (+:reg)
-	for (size_t v = 0; v < nsingle; v++) {
+	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 		g[v] += 2.0 * lsingle * x[v];
 	}
 
 	/* regularize J */
 #pragma omp parallel for ordered reduction (+:reg)
-	for (size_t v = nsingle; v < dim; v++) {
+	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 		g[v] += 2.0 * lpair * x[v];
 	}

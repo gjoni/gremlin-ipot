@@ -44,10 +44,10 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 	/* init the variables */
 	memset(m_x, 0, dim * sizeof(lbfgsfloatval_t));
 
-	printf("# %-8s%-14s%-12s%-12s%-8s%-12s\n", "iter", "f(x)", "||x||",
-			"||g||", "neval", "epsilon");
+	printf("# %-8s%-14s%-14s%-14s%-8s%-12s\n", "iter", "f(x)", "||x||", "||g||",
+			"neval", "epsilon");
 
-	printf("# %-8d%-10.3e\n", 0, P.f(m_x));
+	printf("# %-8d%-12.5e\n", 0, P.f(m_x));
 
 	lbfgs_parameter_t param;
 	lbfgs_parameter_init(&param);
@@ -62,8 +62,7 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 	}
 	printf("\n");
 
-	MRFclass MRF(m_x, m_x + P.MSA->GetNcol() * MSAclass::NAA, P.we,
-			P.MSA->GetNcol());
+	MRFclass MRF(m_x, P.we, P.MSA);
 
 	lbfgs_free(m_x);
 
@@ -86,8 +85,8 @@ int Minimizer::_progress(void *instance, const lbfgsfloatval_t *x,
 		const lbfgsfloatval_t xnorm, const lbfgsfloatval_t gnorm,
 		const lbfgsfloatval_t step, int n, int k, int ls) {
 
-	printf("# %-8d%-10.3e    %-10.3e  %-10.3e  %-6d  %-10.5f\n", k, fx,
-			xnorm, gnorm, ls, gnorm / xnorm);
+	printf("# %-8d%-12.5e  %-12.5e  %-12.5e  %-6d  %-10.5f\n", k, fx, xnorm,
+			gnorm, ls, gnorm / xnorm);
 
 	return 0;
 }

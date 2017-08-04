@@ -10,20 +10,6 @@
 
 #include "MSAclass.h"
 
-/* TODO: specs
- * - score random sequence
- * - score pair of positions
- * - score a patch
- */
-
-/*
- * TODO: ??? How to deal with gaps in the MSA and MRF ???
- *
- * TODO: ??? What to do with masked edges ???
- */
-
-/* TODO: save mapping to ref. -- will solve the above two problems */
-
 class MRFclass {
 
 	friend class Minimizer;
@@ -35,6 +21,12 @@ private:
 
 	size_t dimh;
 	size_t dimJ;
+
+	size_t len_ref;
+
+	/* TODO: save/read these arrays */
+	std::vector<size_t> mtx_to_a3m; /* size() = dim */
+	std::vector<size_t> a3m_to_mtx; /* size() = len_ref */
 
 	double *h; /* dim * NAA */
 	double *J; /* dim * dim * NAA * NAA */
@@ -48,8 +40,8 @@ public:
 
 	MRFclass();
 	MRFclass(const MRFclass &source);
-	MRFclass(double *h, double *J, size_t dim);
-	MRFclass(double *h, double *J, bool *we, size_t dim);
+	MRFclass(double *x, const MSAclass *MSA);
+	MRFclass(double *x, bool *we, const MSAclass *MSA);
 	MRFclass(const std::string &name); /* read MRF from file */
 	~MRFclass();
 

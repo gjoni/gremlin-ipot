@@ -11,14 +11,19 @@
 #include "MRFclass.h"
 
 MRFclass::MRFclass() :
-		dim(0), dimh(0), dimJ(0), h(NULL), J(NULL), we(NULL) {
+		dim(0), dimh(0), dimJ(0), len_ref(0), mtx_to_a3m(0), a3m_to_mtx(0), h(
+		NULL), J(NULL), we(
+		NULL) {
 
 	/* */
 
 }
 
 MRFclass::MRFclass(const MRFclass &s) :
-		dim(s.dim), dimh(s.dimh), dimJ(s.dimJ), h(NULL), J(NULL), we(NULL) {
+		dim(s.dim), dimh(s.dimh), dimJ(s.dimJ), len_ref(s.len_ref), mtx_to_a3m(
+				0), a3m_to_mtx(0), h(NULL), J(
+		NULL), we(
+		NULL) {
 
 	Allocate();
 
@@ -28,13 +33,17 @@ MRFclass::MRFclass(const MRFclass &s) :
 
 }
 
-MRFclass::MRFclass(double *h_, double *J_, size_t dim_) :
-		dim(dim_), h(NULL), J(NULL), we(NULL) {
+MRFclass::MRFclass(double *x, const MSAclass *MSA) :
+		dim(MSA->GetNcol()), len_ref(MSA->GetLen()), mtx_to_a3m(MSA->col_map), a3m_to_mtx(
+				MSA->a3m_to_msa), h(NULL), J(NULL), we(NULL) {
 
 	size_t NAA = MSAclass::NAA;
 
 	dimh = dim * NAA;
 	dimJ = dimh * dimh;
+
+	double *h_ = x;
+	double *J_ = x + dimh;
 
 	Allocate();
 
@@ -61,15 +70,16 @@ MRFclass::MRFclass(double *h_, double *J_, size_t dim_) :
 
 }
 
-MRFclass::MRFclass(double *h_, double *J_, bool *we_, size_t dim_) :
-		MRFclass(h_, J_, dim_) {
+MRFclass::MRFclass(double *x, bool *we_, const MSAclass *MSA) :
+		MRFclass(x, MSA) {
 
 	memcpy(we, we_, dim * dim * sizeof(bool));
 
 }
 
 MRFclass::MRFclass(const std::string &name) :
-		dim(0), dimh(0), dimJ(0), h(NULL), J(NULL), we(NULL) {
+		dim(0), dimh(0), dimJ(0), len_ref(0), mtx_to_a3m(0), a3m_to_mtx(0), h(
+		NULL), J(NULL), we(NULL) {
 
 	FILE *F = fopen(name.c_str(), "r");
 	if (F == NULL) {
@@ -79,12 +89,23 @@ MRFclass::MRFclass(const std::string &name) :
 
 	size_t NAA = MSAclass::NAA;
 
-	/* dimension (seq length) */
-	fscanf(F, "%lu\n", &dim);
+	/* dimensions (seq length) */
+	fscanf(F, "%lu %lu\n", &dim, &len_ref);
 	dimh = dim * NAA;
 	dimJ = dimh * dimh;
 
 	Allocate();
+
+	/* read maps */
+	mtx_to_a3m.resize(dim);
+	a3m_to_mtx.resize(len_ref);
+	for (size_t i = 0; i < dim; i++) {
+		fscanf(F, "%lu ", &(mtx_to_a3m[i]));
+	}
+	for (size_t i = 0; i < len_ref; i++) {
+		fscanf(F, "%lu ", &(a3m_to_mtx[i]));
+	}
+
 
 	/* edge weights */
 	{
@@ -134,6 +155,10 @@ MRFclass& MRFclass::operator=(const MRFclass &source) {
 	dim = source.dim;
 	dimh = source.dimh;
 	dimJ = source.dimJ;
+
+	len_ref = source.len_ref;
+	mtx_to_a3m = source.mtx_to_a3m;
+	a3m_to_mtx = source.a3m_to_mtx;
 
 	Allocate();
 
@@ -190,7 +215,17 @@ void MRFclass::Save(const std::string &name) const {
 	size_t NAA = MSAclass::NAA;
 
 	/* dimension (seq length) */
-	fprintf(F, "%ld\n", dim);
+	fprintf(F, "%ld %ld\n", dim, len_ref);
+
+	/* save maps */
+	for (size_t i = 0; i < dim; i++) {
+		fprintf(F, "%lu ", mtx_to_a3m[i]);
+	}
+	fprintf(F, "\n");
+	for (size_t i = 0; i < len_ref; i++) {
+		fprintf(F, "%lu ", a3m_to_mtx[i]);
+	}
+	fprintf(F, "\n");
 
 	/* edge weights */
 	for (size_t i = 0; i < dim; i++) {

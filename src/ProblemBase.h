@@ -64,6 +64,8 @@ public:
 	/* default */
 	void UnmaskAllEdges();
 
+	void MaskAllEdges();
+
 	size_t GetDim();
 
 };

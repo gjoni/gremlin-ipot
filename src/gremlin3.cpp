@@ -3,8 +3,11 @@
 #include <ctime>
 #include <cstring>
 
-#include "RRCE.h"
-#include "EigenRRCE.h"
+#include <string>
+#include <map>
+#include <vector>
+#include <utility>
+
 #include "MSAclass.h"
 #include "ProblemFull.h"
 #include "Minimizer.h"
@@ -16,9 +19,10 @@
  * 3) score_gramm
  * 4) score_decoy */
 
-/* TODO: issues
- *   - multiple copies of h,J (huge memory overhead) ???
- *   - minimizer requires a lot of memory
+/* TODO:
+ *   - GREMLIN2 symmetric minimizer
+ *   - don't store masked edges (simplified problem with less variables)
+ *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
  */
 
 struct OPTS {
@@ -33,42 +37,66 @@ struct OPTS {
 	int rmode; /* regularization mode */
 };
 
+typedef std::map<std::string, std::vector<std::pair<size_t, size_t> > > EDGE_LIST;
+EDGE_LIST ReadEdges(const char *name);
+
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
 
 int main(int argc, char *argv[]) {
 
+	/*
+	 * (0) process input parameters
+	 */
 	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 1 };
-
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
 	}
 
+	/*
+	 * (1) read & clean MSA
+	 */
 	MSAclass MSA(opts.a3m);
-
 	MSA.CleanMsa(opts.grow, opts.gcol);
 
-	ProblemFull P(MSA);
+	/*
+	 * (2) read edge constraints
+	 */
+	EDGE_LIST L;
+	if (opts.mask != NULL) {
+		L = ReadEdges(opts.mask);
+	} else if (opts.umask != NULL) {
+		L = ReadEdges(opts.umask);
+	}
+	for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+		printf("# %lu edges in group '%s'\n", it->second.size(),
+				it->first.c_str());
+	}
 
 	/*
-	 srand(time(NULL));
-	 std::vector<std::pair<int, int> > e;
-	 for (int i = 0; i < 500; i++) {
-	 int a = rand() % MSA.GetLen();
-	 int b = rand() % MSA.GetLen();
-	 if (a > b) {
-	 e.push_back(std::make_pair(b, a));
-	 }
-	 if (a < b) {
-	 e.push_back(std::make_pair(a, b));
-	 }
-	 }
-	 P.UnmaskEdges(e);
+	 * (3) prepare the problem
 	 */
+	ProblemFull P(MSA);
+	if (opts.mask != NULL) {
+		P.UnmaskAllEdges();
+		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+			P.MaskEdges(it->second);
+		}
+	} else if (opts.umask != NULL) {
+		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+			P.UnmaskEdges(it->second);
+		}
+	}
 
+	/*
+	 * (4) solve P
+	 */
 	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
 
+	/*
+	 * (5) save results
+	 */
 	if (opts.mrf != NULL) {
 		MRF.Save(opts.mrf);
 	}
@@ -98,9 +126,9 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 	char tmp;
 	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:")) != -1) {
 		switch (tmp) {
-		/*option h show the help infomation*/
-		case 'h':
+		case 'h': /* help */
 			printf("!!! HELP !!!\n");
+			return false;
 			break;
 		case 'i': /* A3M file (in) */
 			opts.a3m = optarg;
@@ -173,8 +201,30 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -n number of iterations (%ld)\n", opts.niter);
 	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
-//	printf("          -m list1.txt - residue pairs to be masked\n");
-//	printf("          -u list2.txt - residue pairs to be unmasked\n");
+	printf("          -m list1.txt - residue pairs to be masked\n");
+	printf("          -u list2.txt - residue pairs to be unmasked\n");
 	printf("          -R contact matrix correction {APC,FN,...} (APC)\n");
+
+}
+
+EDGE_LIST ReadEdges(const char *name) {
+
+	EDGE_LIST L;
+
+	FILE *F = fopen(name, "r");
+	if (F == NULL) {
+		printf("Error: cannot open file for reading '%s'\n", name);
+		exit(1);
+	}
+
+	size_t a, b;
+	const size_t SIZE = 256;
+	char buf[SIZE];
+	while (fscanf(F, "%lu %lu %s\n", &a, &b, buf) == 3) {
+		L[buf].push_back(std::make_pair(a, b));
+	}
+	fclose(F);
+
+	return L;
 
 }
