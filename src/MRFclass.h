@@ -55,6 +55,8 @@ public:
 	 * score the native MSA (MSA.ncol == MRF.dim)
 	 */
 
+	std::vector<double> ScoreMSA(const MSAclass &MSA);
+
 	/* contacts indices match reference sequence */
 	double GetPairEnergies(const MSAclass &MSA,
 			const std::vector<std::pair<size_t, size_t> > &contacts) const;

@@ -6,6 +6,7 @@
  */
 
 #include <cstring>
+#include <cassert>
 
 #include "lbfgs.h"
 
@@ -23,6 +24,8 @@ Minimizer::~Minimizer() {
 }
 
 MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
+
+	assert(sizeof(double) == sizeof(lbfgsfloatval_t)); /* sse2 disabled */
 
 	size_t dim = P.GetDim();
 
@@ -87,6 +90,7 @@ int Minimizer::_progress(void *instance, const lbfgsfloatval_t *x,
 
 	printf("# %-8d%-12.5e  %-12.5e  %-12.5e  %-6d  %-10.5f\n", k, fx, xnorm,
 			gnorm, ls, gnorm / xnorm);
+	fflush(stdout);
 
 	return 0;
 }

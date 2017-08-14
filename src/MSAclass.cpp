@@ -333,7 +333,19 @@ void MSAclass::CleanMsa(double rgaps, double cgaps) {
 	CleanCols(cgaps);
 
 	printf("# Initial MSA: %ld x %ld\n", len_ref, a3m.size());
-	printf("# Cleaned MSA: %ld x %ld\n", ncol, nrow);
+	printf("# Cleaned MSA: %ld x %ld (%.1f%% x %.1f%% gaps)\n", ncol, nrow,
+			rgaps * 100, cgaps * 100);
+
+	const char *seq = a3m.front().second.c_str();
+	printf("# %s\n# ", seq);
+	for (size_t i = 0; i < len_ref; i++) {
+		if (a3m_to_msa[i] < SIZE_MAX) {
+			printf("%c", seq[i]);
+		} else {
+			printf("-");
+		}
+	}
+	printf("\n");
 
 }
 
@@ -383,7 +395,7 @@ void MSAclass::PrintMSA() const {
 }
 
 std::vector<std::pair<size_t, size_t> > MSAclass::CastToMsa(
-		const std::vector<std::pair<int, int> > &contacts) const {
+		const std::vector<std::pair<size_t, size_t> > &contacts) const {
 
 	std::vector<std::pair<size_t, size_t> > contacts_new;
 
@@ -402,5 +414,19 @@ std::vector<std::pair<size_t, size_t> > MSAclass::CastToMsa(
 size_t MSAclass::GetLen() const {
 
 	return len_ref;
+
+}
+
+size_t MSAclass::GetLen(size_t frag) const {
+
+	size_t len = 0;
+
+	for (size_t i = 0; i < frag; i++) {
+		if (a3m_to_msa[i] < SIZE_MAX) {
+			len++;
+		}
+	}
+
+	return len;
 
 }

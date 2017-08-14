@@ -106,7 +106,6 @@ MRFclass::MRFclass(const std::string &name) :
 		fscanf(F, "%lu ", &(a3m_to_mtx[i]));
 	}
 
-
 	/* edge weights */
 	{
 		size_t SIZE = dim + 2;
@@ -327,5 +326,54 @@ double MRFclass::GetPairEnergies(const unsigned char *msa, size_t nrow,
 	}
 
 	return E;
+
+}
+
+std::vector<double> MRFclass::ScoreMSA(const MSAclass &MSA) {
+
+	std::vector<double> v;
+
+	size_t NAA = MSAclass::NAA;
+
+	unsigned char *seq = (unsigned char*) malloc(
+			MSA.ncol * sizeof(unsigned char));
+
+	for (size_t i = 0; i < MSA.nrow; i++) {
+
+		/* convert A3M sequence into indices */
+		const std::string &a3m_seq = MSA.a3m[MSA.row_map[i]].second;
+		for (size_t j = 0; j < MSA.ncol; j++) {
+			seq[j] = MSAclass::aatoi(a3m_seq[MSA.col_map[j]]);
+		}
+
+		double E = 0.0;
+
+		/* local fields */
+		size_t nnongap = 0;
+		for (size_t j = 0; j < MSA.ncol; j++) {
+			E += h[j * NAA + seq[j]];
+			if (seq[j] < NAA - 1) {
+				nnongap++;
+			}
+		}
+
+		/* couplings */
+		for (size_t j = 0; j < MSA.ncol; j++) {
+			unsigned char a = seq[j];
+			for (size_t k = j + 1; k < MSA.ncol; k++) {
+				unsigned char b = seq[k];
+//				if (a < NAA - 1 && b < NAA - 1) {
+				E += J[j * MSA.ncol + k] * NAA * NAA + (a * NAA + b);
+//				}
+			}
+		}
+
+		v.push_back(-E);
+
+	}
+
+	free(seq);
+
+	return v;
 
 }

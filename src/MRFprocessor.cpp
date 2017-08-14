@@ -79,34 +79,135 @@ void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
 	meansum /= dim * dim;
 
 	/* apply APC to mtx[][] */
-	double min = 1.0;
 	for (size_t i = 0; i < dim; i++) {
 		for (size_t j = 0; j < dim; j++) {
 			mtx[i][j] -= (means[i] * means[j]) / meansum;
-//			if (mtx[i][j] < min) {
-//				min = mtx[i][j];
-//			}
-		}
-	}
-
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = i + 1; j < dim; j++) {
-			if (mtx[i][j] < min) {
-				min = mtx[i][j];
-			}
 		}
 	}
 
 	/* shift all elements by min */
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = 0; j < dim; j++) {
-			mtx[i][j] -= min;
-		}
-		mtx[i][i] = 0.0;
-	}
+	/*
+	 double min = 1.0;
+	 for (size_t i = 0; i < dim; i++) {
+	 for (size_t j = i + 1; j < dim; j++) {
+	 if (mtx[i][j] < min) {
+	 min = mtx[i][j];
+	 }
+	 }
+	 }
+
+	 for (size_t i = 0; i < dim; i++) {
+	 for (size_t j = 0; j < dim; j++) {
+	 mtx[i][j] -= min;
+	 }
+	 mtx[i][i] = 0.0;
+	 }
+	 */
 
 	/* free */
 	free(means);
+
+}
+
+void MRFprocessor::BAPC(const MRFclass &MRF, MTX &result, size_t shift) {
+
+	size_t dim = MRF.GetDim();
+	result.dim = dim;
+
+	result.mtx1d.resize(dim * dim);
+
+	double **mtx = (double**) malloc(dim * sizeof(double*));
+	for (size_t i = 0; i < dim; i++) {
+		mtx[i] = (double*) malloc(dim * sizeof(double));
+	}
+
+	FN(MRF, mtx);
+
+	/*
+	 * row/col averages
+	 */
+	double *means_diag = (double*) calloc(dim, sizeof(double));
+	double *means_offd = (double*) calloc(dim, sizeof(double));
+
+	/* diagonal block A */
+	double meansum_A = 0.0;
+	for (size_t i = 0; i < shift; i++) {
+		for (size_t j = 0; j < shift; j++) {
+			double w = mtx[i][j];
+			means_diag[j] += w / shift;
+			meansum_A += w;
+		}
+	}
+	meansum_A /= shift * shift;
+
+	/* diagonal block B */
+	double meansum_B = 0.0;
+	for (size_t i = shift; i < dim; i++) {
+		for (size_t j = shift; j < dim; j++) {
+			double w = mtx[i][j];
+			means_diag[j] += w / (dim - shift);
+			meansum_B += w;
+		}
+	}
+	meansum_B /= (dim - shift) * (dim - shift);
+
+	/* off-diagonal block AB */
+	double meansum_AB = 0.0;
+	for (size_t i = 0; i < shift; i++) {
+		for (size_t j = shift; j < dim; j++) {
+			double w = mtx[i][j];
+			means_offd[i] += w / (dim - shift);
+			means_offd[j] += w / shift;
+			meansum_AB += w;
+		}
+	}
+	meansum_AB /= shift * (dim - shift);
+
+	/*
+	 * apply APC to mtx[][]
+	 */
+
+	/* diagonal block A */
+	for (size_t i = 0; i < shift; i++) {
+		for (size_t j = 0; j < shift; j++) {
+			mtx[i][j] -= (means_diag[i] * means_diag[j]) / meansum_A;
+		}
+	}
+
+	/* diagonal block B */
+	for (size_t i = shift; i < dim; i++) {
+		for (size_t j = shift; j < dim; j++) {
+			mtx[i][j] -= (means_diag[i] * means_diag[j]) / meansum_B;
+		}
+	}
+
+	/* off-diagonal block AB */
+	for (size_t i = 0; i < shift; i++) {
+		for (size_t j = shift; j < dim; j++) {
+			mtx[i][j] -= (means_offd[i] * means_offd[j]) / meansum_AB;
+			mtx[j][i] = mtx[i][j];
+		}
+	}
+
+	/*
+	 * copy mtx[][] into MRF
+	 */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			result.mtx1d[i * dim + j] = mtx[i][j];
+		}
+	}
+
+	/*
+	 * free
+	 */
+	for (size_t i = 0; i < dim; i++) {
+		free(mtx[i]);
+	}
+	free(mtx);
+
+	free(means_diag);
+	free(means_offd);
 
 }
 

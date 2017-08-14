@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <ctime>
 #include <cstring>
+#include <cmath>
 
 #include <string>
 #include <map>
@@ -20,6 +21,9 @@
  * 4) score_decoy */
 
 /* TODO:
+ *   + convert 'shift' into cleaned MSA numbering
+ *   + add block-APC (BAPC) correction & parameter '-b'
+ *   - output per group scores (for constrained problem only)
  *   - GREMLIN2 symmetric minimizer
  *   - don't store masked edges (simplified problem with less variables)
  *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
@@ -35,6 +39,7 @@ struct OPTS {
 	char *mask;
 	char *umask;
 	int rmode; /* regularization mode */
+	size_t shift; /* block A for block-APC */
 };
 
 typedef std::map<std::string, std::vector<std::pair<size_t, size_t> > > EDGE_LIST;
@@ -48,7 +53,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 1 };
+	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 2, 0 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -59,6 +64,17 @@ int main(int argc, char *argv[]) {
 	 */
 	MSAclass MSA(opts.a3m);
 	MSA.CleanMsa(opts.grow, opts.gcol);
+	if (opts.shift) {
+		if (opts.shift >= MSA.GetLen()) {
+			printf(
+					"Error: block size (%lu) should be smaller than A3M sequence length (-b)\n",
+					opts.shift);
+			return 1;
+		}
+		printf("# Adjusted block size: %lu --> ", opts.shift);
+		opts.shift = MSA.GetLen(opts.shift);
+		printf("%lu\n", opts.shift);
+	}
 
 	/*
 	 * (2) read edge constraints
@@ -75,17 +91,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	/*
-	 * (3) prepare the problem
+	 * (3) set up the problem
 	 */
 	ProblemFull P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-			P.MaskEdges(it->second);
+			P.MaskEdges(MSA.CastToMsa(it->second));
 		}
 	} else if (opts.umask != NULL) {
+		P.MaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-			P.UnmaskEdges(it->second);
+			P.UnmaskEdges(MSA.CastToMsa(it->second));
 		}
 	}
 
@@ -95,26 +112,55 @@ int main(int argc, char *argv[]) {
 	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
 
 	/*
-	 * (5) save results
+	 {
+	 std::vector<double> v = MRF.ScoreMSA(MSA);
+	 double E = 0.0;
+	 for (size_t i = 0; i < v.size(); i++) {
+	 E += v[i];
+	 }
+	 E /= v.size();
+	 printf("# <E_sequence>= %f\n", E);
+	 }
+	 */
+
+	/*
+	 * (5) save MRF
 	 */
 	if (opts.mrf != NULL) {
 		MRF.Save(opts.mrf);
 	}
 
+	/*
+	 * (6) do MRF post-processing
+	 */
 	if (opts.mtx != NULL) {
 		MRFprocessor::MTX result;
 		switch (opts.rmode) {
 		case 1:
-			MRFprocessor::APC(MRF, result);
+			MRFprocessor::FN(MRF, result);
 			break;
 		case 2:
-			MRFprocessor::FN(MRF, result);
+			MRFprocessor::APC(MRF, result);
+			break;
+		case 3:
+			MRFprocessor::BAPC(MRF, result, opts.shift);
 			break;
 		default:
 			printf("!!! ACHTUNG !!! (this should never happen)\n");
 			return 1;
 		}
 		MRFprocessor::SaveMTX(result, opts.mtx);
+
+		/*
+		 * (7) calculate per group scores
+		 */
+		if (opts.umask != NULL) {
+			for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+				double score = MRFprocessor::GetScore(result,
+						MSA.CastToMsa(it->second));
+				printf("# Score(%s)= %.6e\n", it->first.c_str(), score);
+			}
+		}
 	}
 
 	return 0;
@@ -124,7 +170,7 @@ int main(int argc, char *argv[]) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:b:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -166,16 +212,24 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		case 'u': /* a list of residue pairs to be unmasked */
 			opts.umask = optarg;
 			break;
+		case 'b':
+			opts.shift = atoi(optarg);
+			if (!opts.shift) {
+				printf("Error: block size should be > 0 (-b)\n");
+				return false;
+			}
+			break;
 		case 'R': /* regularization mode */
-			if (strcmp(optarg, "APC") == 0) {
+			if (strcmp(optarg, "FN") == 0) {
 				opts.rmode = 1;
-			} else if (strcmp(optarg, "FN") == 0) {
+			} else if (strcmp(optarg, "APC") == 0) {
 				opts.rmode = 2;
+			} else if (strcmp(optarg, "BAPC") == 0) {
+				opts.rmode = 3;
 			} else {
 				printf("Error: wrong matrix correction mode '%s'\n", optarg);
 				return false;
 			}
-			opts.umask = optarg;
 			break;
 		default:
 			return false;
@@ -185,6 +239,18 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	if (opts.a3m == NULL) {
 		printf("Error: A3M file not specified\n");
+		return false;
+	}
+
+	if (opts.rmode == 3 && !opts.shift) {
+		printf(
+				"Error: block-APC correction requires setting block size '-b'\n");
+		return false;
+	}
+
+	if (opts.shift && opts.rmode == 2) {
+		printf(
+				"Error: setting block size requires FN or BAPC correction '-R'\n");
 		return false;
 	}
 
@@ -203,7 +269,8 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
 	printf("          -m list1.txt - residue pairs to be masked\n");
 	printf("          -u list2.txt - residue pairs to be unmasked\n");
-	printf("          -R contact matrix correction {APC,FN,...} (APC)\n");
+	printf("          -R contact matrix correction {FN,APC,BAPC...} (APC)\n");
+	printf("          -b block size for the block-APC correction\n");
 
 }
 

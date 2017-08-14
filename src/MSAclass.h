@@ -87,6 +87,7 @@ public:
 	size_t GetNrow() const;
 	size_t GetNcol() const;
 	size_t GetLen() const;
+	size_t GetLen(size_t frag) const; /* cleaned length of frag */
 
 	/* A3M->MSA mapping*/
 	size_t GetMsaIdx(size_t idx) const;
@@ -95,7 +96,7 @@ public:
 	 * to match the cleaned msa[]
 	 * (contacts with residues missing in the msa[] are omitted) */
 	std::vector<std::pair<size_t, size_t> > CastToMsa(
-			const std::vector<std::pair<int, int> > &contacts) const;
+			const std::vector<std::pair<size_t, size_t> > &contacts) const;
 
 	/* for a complex */
 //	std::vector<std::pair<size_t, size_t> > CastToMsa(
@@ -118,7 +119,6 @@ public:
 	/* TODO: list all possible pairs of continuous tuples of length len */
 //	std::vector<std::pair<size_t, size_t> > GetTuples(const MSAclass &MSA,
 //			size_t len);
-
 };
 
 #endif /* MSACLASS_H_ */

@@ -36,8 +36,6 @@ public:
 
 	/* TODO */
 //	MRFprocessor(const MSAclass &MSA, const MRFclass &MRF);
-
-
 	/* TODO:
 	 * 1) selection of top contacts
 	 * 2) scoring of contacts by 'contact' score
@@ -46,11 +44,11 @@ public:
 	/* Frobenius norms of the 20x20 submatrices */
 	static void FN(const MRFclass &MRF, MTX &result);
 
-	/* average product correction */
+	/* average product correction (APC) */
 	static void APC(const MRFclass &MRF, MTX &result);
 
-	/* TODO: APC for a submatrix */
-//	static void APC(const MRFclass &MRF, MTX &result, size_t shift);
+	/* APC for a submatrix - block-APC */
+	static void BAPC(const MRFclass &MRF, MTX &result, size_t shift);
 
 	/* save to file */
 	static void SaveMTX(const MTX &result, const std::string &name);

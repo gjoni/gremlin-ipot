@@ -27,9 +27,10 @@ private:
 			const lbfgsfloatval_t *g, const lbfgsfloatval_t fx,
 			const lbfgsfloatval_t xnorm, const lbfgsfloatval_t gnorm,
 			const lbfgsfloatval_t step, int n, int k, int ls);
+
 public:
 
-	static MRFclass MinimizeLBFGS(ProblemBase &P, int niter = 50);
+	static MRFclass MinimizeLBFGS(ProblemBase &P, int niter);
 
 };
 
