@@ -33,6 +33,7 @@ class MSAclass {
 
 	friend class ProblemBase;
 	friend class ProblemFull;
+	friend class ProblemRRCE;
 	friend class MRFclass;
 
 private:

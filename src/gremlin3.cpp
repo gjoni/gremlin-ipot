@@ -11,6 +11,7 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
+#include "ProblemRRCE.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 
@@ -21,9 +22,9 @@
  * 4) score_decoy */
 
 /* TODO:
- *   + convert 'shift' into cleaned MSA numbering
- *   + add block-APC (BAPC) correction & parameter '-b'
- *   - output per group scores (for constrained problem only)
+ *   + TEST - convert 'shift' into cleaned MSA numbering
+ *   + TEST - add block-APC (BAPC) correction & parameter '-b'
+ *   + TEST - output per group scores (for constrained problem only)
  *   - GREMLIN2 symmetric minimizer
  *   - don't store masked edges (simplified problem with less variables)
  *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
@@ -93,16 +94,19 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	ProblemFull P(MSA);
+	ProblemRRCE P(MSA, 7);
+//	ProblemFull P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-			P.MaskEdges(MSA.CastToMsa(it->second));
+//			P.MaskEdges(MSA.CastToMsa(it->second));
+			P.MaskEdges(it->second);
 		}
 	} else if (opts.umask != NULL) {
 		P.MaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-			P.UnmaskEdges(MSA.CastToMsa(it->second));
+//			P.UnmaskEdges(MSA.CastToMsa(it->second));
+			P.UnmaskEdges(it->second);
 		}
 	}
 
@@ -156,9 +160,12 @@ int main(int argc, char *argv[]) {
 		 */
 		if (opts.umask != NULL) {
 			for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-				double score = MRFprocessor::GetScore(result,
-						MSA.CastToMsa(it->second));
-				printf("# Score(%s)= %.6e\n", it->first.c_str(), score);
+				std::vector<std::pair<size_t, size_t> > vec = MSA.CastToMsa(
+						it->second);
+				double score = MRFprocessor::GetScore(result, vec);
+				double energy = MRF.GetPairEnergies(MSA, vec);
+				printf("# Score(%s)= %.6e, Energy(%s)= %.6e\n",
+						it->first.c_str(), score, it->first.c_str(), energy);
 			}
 		}
 	}

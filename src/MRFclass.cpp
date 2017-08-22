@@ -47,22 +47,25 @@ MRFclass::MRFclass(double *x, const MSAclass *MSA) :
 
 	Allocate();
 
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t a = 0; a < NAA; a++) {
-			h[i * NAA + a] = h_[a * dim + i];
-		}
-	}
+	memcpy(h, h_, dimh * sizeof(double));
+	memcpy(J, J_, dimJ * sizeof(double));
 
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t a = 0; a < NAA; a++) {
-			for (size_t j = 0; j < dim; j++) {
-				for (size_t b = 0; b < NAA; b++) {
-					J[(i * dim + j) * NAA * NAA + a * NAA + b] = J_[((a * dim
-							+ i) * NAA + b) * dim + j];
-				}
-			}
-		}
-	}
+//	for (size_t i = 0; i < dim; i++) {
+//		for (size_t a = 0; a < NAA; a++) {
+//			h[i * NAA + a] = h_[a * dim + i];
+//		}
+//	}
+//
+//	for (size_t i = 0; i < dim; i++) {
+//		for (size_t a = 0; a < NAA; a++) {
+//			for (size_t j = 0; j < dim; j++) {
+//				for (size_t b = 0; b < NAA; b++) {
+//					J[(i * dim + j) * NAA * NAA + a * NAA + b] = J_[((a * dim
+//							+ i) * NAA + b) * dim + j];
+//				}
+//			}
+//		}
+//	}
 
 	for (size_t i = 0; i < dim * dim; i++) {
 		we[i] = true;

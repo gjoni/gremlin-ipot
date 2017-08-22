@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "MSAclass.h"
+#include "MRFclass.h"
 
 /*
  * base abstract class for handling the Gremlin problem
@@ -48,6 +49,8 @@ public:
 	virtual double f(const double *x) = 0;
 	virtual void df(const double *x, double *g) = 0;
 	virtual void fdf(const double *x, double *f, double *g) = 0;
+
+	virtual void GetMRFvector(const double *x, double *mrfx) = 0;
 
 	void Reweight(double t = 0.8);
 

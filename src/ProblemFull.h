@@ -49,6 +49,8 @@ public:
 	void df(const double *x, double *g);
 	void fdf(const double *x, double *f, double *g);
 
+	void GetMRFvector(const double *x, double *mrfx);
+
 };
 
 #endif /* PROBLEMFULL_H_ */

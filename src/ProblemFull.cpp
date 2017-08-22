@@ -76,6 +76,8 @@ ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
  *    ...,
  *    v0('-'), v1('-'), ..., vL-1('-')
  *
+ * TODO: ??? isn't it W={wi,j(AAj,AAi)} ???
+ *
  * couplings W={wi,j(AAi,AAj)}, 1D array of (NAA * NAA * ncol * ncol) size
  * i,j - positions in sequence
  * AAi,AAj - amino acid identities at positions i,j
@@ -146,6 +148,10 @@ double ProblemFull::f(const double *x) {
 
 		/* add interactions with all other positions */
 		for (size_t k = 0; k < ncol; k++) {
+
+			/* wp[] - array of interaction energies of res k
+			 * of identity seq[k] with all other positions
+			 * of varying identities*/
 			const double *wp = x2 + (seq[k] * ncol + k) * NAA * ncol;
 			double *ep = e;
 			for (size_t j = 0; j < NAA * ncol; j++) {
@@ -350,6 +356,24 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 
 	free(gaux);
 
+	/* symmetrize 21x21 submatrices */
+//	for (size_t b = 0; b < NAA; b++) {
+//		for (size_t k = 0; k < ncol; k++) {
+//			for (size_t a = b + 1; a < NAA; a++) {
+//				for (size_t j = 0; j < ncol; j++) {
+//					double s =
+//							0.5
+//									* (g2[((b * ncol + k) * NAA + a) * ncol + j]
+//											+ g2[((a * ncol + k) * NAA + b)
+//													* ncol + j]);
+//					g2[((b * ncol + k) * NAA + a) * ncol + j] = s;
+//					g2[((a * ncol + k) * NAA + b) * ncol + j] = s;
+//				}
+//			}
+//
+//		}
+//	}
+
 	double reg = 0.0;
 
 	/* regularize h */
@@ -367,5 +391,34 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 	}
 
 	*f += reg;
+
+}
+
+void ProblemFull::GetMRFvector(const double *x, double *mrfx) {
+
+	memset(mrfx, 0, dim * sizeof(double));
+
+	size_t NAA = MSAclass::NAA;
+	size_t ncol = MSA->ncol;
+
+	for (size_t i = 0; i < ncol; i++) {
+		for (size_t a = 0; a < NAA; a++) {
+			mrfx[i * NAA + a] = x[a * ncol + i];
+		}
+	}
+
+	double *J = mrfx + dim1body;
+	const double *x2 = x + dim1body;
+
+	for (size_t i = 0; i < ncol; i++) {
+		for (size_t a = 0; a < NAA; a++) {
+			for (size_t j = 0; j < ncol; j++) {
+				for (size_t b = 0; b < NAA; b++) {
+					J[(i * ncol + j) * NAA * NAA + a * NAA + b] = x2[((a * ncol
+							+ i) * NAA + b) * ncol + j];
+				}
+			}
+		}
+	}
 
 }

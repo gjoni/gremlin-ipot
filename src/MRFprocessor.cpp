@@ -83,6 +83,7 @@ void MRFprocessor::APC(const MRFclass &MRF, double **mtx) {
 		for (size_t j = 0; j < dim; j++) {
 			mtx[i][j] -= (means[i] * means[j]) / meansum;
 		}
+		mtx[i][i] = 0.0;
 	}
 
 	/* shift all elements by min */

@@ -39,7 +39,7 @@ EigenRRCE::EigenRRCE(double **J_) {
 	for (int i = 0; i < dim; i++) {
 		printf("# ev[%2d][]:", i);
 		for (int j = 0; j < 20; j++) {
-			printf("%7.3f", ev[i][j]);
+			printf("%7.3f", ev[i][j] * e[i]);
 		}
 		printf("\n");
 	}
@@ -118,8 +118,8 @@ double EigenRRCE::GetEigenEnergy(const int a, const int b, const int i) {
 	double E = 0.0;
 
 	if (i < 0) {
-		for (int k = -i; k <= dim; k++) {
-			E += e[k - 1] * ev[k - 1][a] * ev[k][b];
+		for (int k = -i; k < dim; k++) {
+			E += e[k] * ev[k][a] * ev[k][b];
 		}
 	} else {
 		E = e[i] * ev[i][a] * ev[i][b];
@@ -182,7 +182,7 @@ double EigenRRCE::GetReconstructionCorrel(const int i) {
 
 double EigenRRCE::GetEigenvalue(const int i) {
 
-	return e[i - 1];
+	return e[i];
 
 }
 
@@ -190,7 +190,19 @@ void EigenRRCE::GetEigenmatrix(int i, double **em) {
 
 	for (int a = 0; a < dim; a++) {
 		for (int b = 0; b < dim; b++) {
-			em[a][b] = ev[i - 1][a] * ev[i - 1][b];
+			em[a][b] = ev[i][a] * ev[i][b];
+		}
+	}
+
+}
+
+void EigenRRCE::GetEigenmatrix(int i, double *em) {
+
+	double *em_ptr = em;
+
+	for (int a = 0; a < dim; a++) {
+		for (int b = 0; b < dim; b++) {
+			*em_ptr++ = ev[i][a] * ev[i][b] * e[i];
 		}
 	}
 
