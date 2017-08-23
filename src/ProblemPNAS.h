@@ -1,24 +1,21 @@
 /*
- * ProblemRRCE.h
+ * ProblemPNAS.h
  *
- *  Created on: Jul 26, 2017
+ *  Created on: Aug 23, 2017
  *      Author: ivan
  */
 
-#ifndef PROBLEMRRCE_H_
-#define PROBLEMRRCE_H_
+#ifndef PROBLEMPNAS_H_
+#define PROBLEMPNAS_H_
 
-#include "RRCE.h"
 #include "ProblemBase.h"
 
-class ProblemRRCE: public ProblemBase {
-private:
+class ProblemPNAS: public ProblemBase {
 
-	RRCE pot;
+private:
 	size_t nmodes; /* number of eigenmodes */
 
 	double *em; /* 20 x 20 x nmodes - stores eigenmatrices */
-	double *ev; /* eigenvalues */
 
 	double lsingle;
 	double lpair;
@@ -29,11 +26,15 @@ private:
 	void Allocate();
 	void Free();
 
+	static const double peak1[];
+	static const double peak2[];
+	static const double peak3[];
+
 public:
 
-	ProblemRRCE();
-	ProblemRRCE(const MSAclass &MSA, size_t n);
-	~ProblemRRCE();
+	ProblemPNAS();
+	ProblemPNAS(const MSAclass &MSA, size_t n);
+	~ProblemPNAS();
 
 	double f(const double *x);
 	void df(const double *x, double *g);
@@ -45,4 +46,4 @@ public:
 
 };
 
-#endif /* PROBLEMRRCE_H_ */
+#endif /* PROBLEMPNAS_H_ */

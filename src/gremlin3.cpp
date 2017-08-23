@@ -12,6 +12,7 @@
 #include "MSAclass.h"
 #include "ProblemFull.h"
 #include "ProblemRRCE.h"
+#include "ProblemPNAS.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 
@@ -94,7 +95,8 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	ProblemRRCE P(MSA, 8);
+	ProblemPNAS P(MSA, 2);
+//	ProblemRRCE P(MSA, 8);
 //	ProblemFull P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
