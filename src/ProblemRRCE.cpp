@@ -41,7 +41,7 @@ void ProblemRRCE::Free() {
 }
 
 ProblemRRCE::ProblemRRCE(const MSAclass &MSA_, size_t n) :
-		ProblemBase(MSA_), pot("data/RRCE20SCC/table.7.0A_k5"), nmodes(n), em(
+		ProblemBase(MSA_), pot("data/RRCE20RC/table.8.0A_k5"), nmodes(n), em(
 		NULL), ev(NULL), lsingle(0), lpair(0), dim1body(0), dim2body(0) {
 
 	Allocate();

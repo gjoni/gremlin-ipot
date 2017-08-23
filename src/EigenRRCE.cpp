@@ -30,19 +30,19 @@ EigenRRCE::EigenRRCE(double **J_) {
 	 * (2) decompose
 	 */
 	Decompose();
-	printf("# e[]     :");
-	for (int i = 0; i < dim; i++) {
-		printf("%7.3f", e[i]);
-	}
-	printf("\n");
-
-	for (int i = 0; i < dim; i++) {
-		printf("# ev[%2d][]:", i);
-		for (int j = 0; j < 20; j++) {
-			printf("%7.3f", ev[i][j] * e[i]);
-		}
-		printf("\n");
-	}
+//	printf("# e[]     :");
+//	for (int i = 0; i < dim; i++) {
+//		printf("%7.3f", e[i]);
+//	}
+//	printf("\n");
+//
+//	for (int i = 0; i < dim; i++) {
+//		printf("# ev[%2d][]:", i);
+//		for (int j = 0; j < 20; j++) {
+//			printf("%7.3f", ev[i][j] * e[i]);
+//		}
+//		printf("\n");
+//	}
 
 }
 

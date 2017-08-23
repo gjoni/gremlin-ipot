@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	ProblemRRCE P(MSA, 7);
+	ProblemRRCE P(MSA, 8);
 //	ProblemFull P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
