@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <cmath>
 
 #include <algorithm>
 
@@ -237,6 +238,17 @@ size_t MSAclass::GetMsaIdx(size_t idx) const {
 
 }
 
+size_t MSAclass::GetA3MIdx(size_t idx) const {
+
+	if (idx < 0 || idx >= ncol) {
+		printf("Error: MSA index (%ld) out of range\n", idx);
+		exit(1);
+	}
+
+	return col_map[idx];
+
+}
+
 unsigned char * MSAclass::GetMsa() const {
 
 	unsigned char *msa_ = (unsigned char*) malloc(
@@ -430,3 +442,125 @@ size_t MSAclass::GetLen(size_t frag) const {
 	return len;
 
 }
+
+void MSAclass::Hx(double *hx) const {
+
+	memset(hx, 0, ncol * sizeof(double));
+
+	double **px = (double**) malloc(ncol * sizeof(double**));
+	for (size_t i = 0; i < ncol; i++) {
+		px[i] = (double*) calloc(NAA, sizeof(double));
+	}
+
+	/*
+	 * (1) collect aa counts for every sequence position
+	 */
+	for (size_t i = 0; i < nrow; i++) {
+		size_t row = row_map[i];
+		for (size_t j = 0; j < ncol; j++) {
+			size_t col = col_map[j];
+			unsigned char c = aatoi(a3m[row].second[col]);
+			if (c >= 0 && c < NAA) {
+				px[j][c] += 1.0;
+			}
+		}
+	}
+
+	/*
+	 * (2) convert counts into entropies
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		for (size_t c = 0; c < NAA; c++) {
+			px[i][c] /= nrow;
+			if (px[i][c] > 1e-10) {
+				hx[i] -= px[i][c] * log(px[i][c]);
+			}
+		}
+	}
+
+	/*
+	 * free
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		free(px[i]);
+	}
+	free(px);
+
+}
+
+void MSAclass::Hxy(double **hxy) const {
+
+	for (size_t i = 0; i < ncol; i++) {
+		memset(hxy[i], 0, ncol * sizeof(double));
+	}
+
+	/* loop over all i<j pairs */
+	for (size_t i = 0; i < ncol; i++) {
+
+		for (size_t j = i + 1; j < ncol; j++) {
+
+			/* store aa pair counts here */
+			double *pxy = (double*) calloc(NAA * NAA, sizeof(double));
+
+			/* loop over all sequences */
+			for (size_t k = 0; k < nrow; k++) {
+				const std::string &seq = a3m[row_map[k]].second;
+				unsigned char a = aatoi(seq[col_map[i]]);
+				unsigned char b = aatoi(seq[col_map[j]]);
+				if (a >= 0 && a < NAA && b >= 0 && b < NAA) {
+					pxy[a * NAA + b] += 1.0;
+				}
+			}
+
+			/* convert counts into entropies */
+			for (size_t ab = 0; ab < NAA * NAA; ab++) {
+				pxy[ab] /= nrow;
+				if (pxy[ab] > 1e-10) {
+					hxy[i][j] -= pxy[ab] * log(pxy[ab]);
+				}
+			}
+
+			/* make the hxy[][] matrix symmetric */
+			hxy[j][i] = hxy[i][j];
+
+			free(pxy);
+
+		}
+	}
+
+}
+
+void MSAclass::MI(double **mi) const {
+
+	for (size_t i = 0; i < ncol; i++) {
+		memset(mi[i], 0, ncol * sizeof(double));
+	}
+
+	double *hx = (double*) malloc(ncol * sizeof(double));
+	double **hxy = (double**) malloc(ncol * sizeof(double*));
+	for (size_t i = 0; i < ncol; i++) {
+		hxy[i] = (double*) malloc(ncol * sizeof(double));
+	}
+
+	Hx(hx);
+	Hxy(hxy);
+
+	for (size_t i = 0; i < ncol; i++) {
+		for (size_t j = 0; j < ncol; j++) {
+			mi[i][j] = hx[i] + hx[j] - hxy[i][j];
+			printf("%ld %ld %.4f %.4f %.4f %.4f\n", i + 1, j + 1, hx[i], hx[j],
+					hxy[i][j], mi[i][j]);
+		}
+	}
+
+	/*
+	 * free
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		free(hxy[i]);
+	}
+	free(hxy);
+	free(hx);
+
+}
+

@@ -20,6 +20,8 @@ This package uses L-BFGS minimizer by J.Nocedal and N.Okazaki available at https
 Original GREMLIN2 protocol (aka plmDCA) is substantially adopted from the CCMpred package by J.Soeding group https://github.com/soedinglab/CCMpred.
 
 ## References
+
 [1] I Anishchenko, S Ovchinnikov, H Kamisetty, D Baker. Origins of coevolution between residues distant in protein 3D structures. (2017) 114(34):9122-7
+
 [2] I Anishchenko, PJ Kundrotas, IA Vakser. Contact energies in proteins and protein complexes inferred from the Potts model. (2017) In preparation
 

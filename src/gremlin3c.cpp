@@ -1,3 +1,10 @@
+/*
+ * gremlin3c.cpp
+ *
+ *  Created on: Sep 26, 2017
+ *      Author: ivan
+ */
+
 #include <cstdio>
 #include <unistd.h>
 #include <ctime>
@@ -11,26 +18,8 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
-#include "ProblemRRCE.h"
-#include "ProblemPNAS.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
-
-/* TODO: separate programs
- * 1) gremlin3 - produces an MRF
- *    1a. gremlin3c - for complexes: block-APC
- * 2) score_patchdock
- * 3) score_gramm
- * 4) score_decoy */
-
-/* TODO:
- *   + TEST - convert 'shift' into cleaned MSA numbering
- *   + TEST - add block-APC (BAPC) correction & parameter '-b'
- *   + TEST - output per group scores (for constrained problem only)
- *   - GREMLIN2 symmetric minimizer
- *   - don't store masked edges (simplified problem with less variables)
- *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
- */
 
 struct OPTS {
 	char *a3m; /* A3M file */
@@ -42,7 +31,7 @@ struct OPTS {
 	char *mask;
 	char *umask;
 	int rmode; /* regularization mode */
-//	size_t shift; /* block A for block-APC */
+	size_t shift; /* block A for block-APC */
 };
 
 typedef std::map<std::string, std::vector<std::pair<size_t, size_t> > > EDGE_LIST;
@@ -56,7 +45,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 2 };
+	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 2, 0 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -67,6 +56,17 @@ int main(int argc, char *argv[]) {
 	 */
 	MSAclass MSA(opts.a3m);
 	MSA.CleanMsa(opts.grow, opts.gcol);
+	if (opts.shift) {
+		if (opts.shift >= MSA.GetLen()) {
+			printf(
+					"Error: block size (%lu) should be smaller than A3M sequence length (-b)\n",
+					opts.shift);
+			return 1;
+		}
+		printf("# Adjusted block size: %lu --> ", opts.shift);
+		opts.shift = MSA.GetLen(opts.shift);
+		printf("%lu\n", opts.shift);
+	}
 
 	/*
 	 * (2) read edge constraints
@@ -91,11 +91,13 @@ int main(int argc, char *argv[]) {
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+//			P.MaskEdges(MSA.CastToMsa(it->second));
 			P.MaskEdges(it->second);
 		}
 	} else if (opts.umask != NULL) {
 		P.MaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+//			P.UnmaskEdges(MSA.CastToMsa(it->second));
 			P.UnmaskEdges(it->second);
 		}
 	}
@@ -131,16 +133,14 @@ int main(int argc, char *argv[]) {
 		MRFprocessor::MTX result;
 		switch (opts.rmode) {
 		case 1:
-			printf("# Contact matrix correction: FN\n");
 			MRFprocessor::FN(MRF, result);
 			break;
 		case 2:
-			printf("# Contact matrix correction: APC\n");
 			MRFprocessor::APC(MRF, result);
 			break;
-//		case 3:
-//			MRFprocessor::BAPC(MRF, result, opts.shift);
-//			break;
+		case 3:
+			MRFprocessor::BAPC(MRF, result, opts.shift);
+			break;
 		default:
 			printf("!!! ACHTUNG !!! (this should never happen)\n");
 			return 1;
@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:b:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -211,20 +211,20 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		case 'u': /* a list of residue pairs to be unmasked */
 			opts.umask = optarg;
 			break;
-//		case 'b':
-//			opts.shift = atoi(optarg);
-//			if (!opts.shift) {
-//				printf("Error: block size should be > 0 (-b)\n");
-//				return false;
-//			}
-//			break;
+		case 'b':
+			opts.shift = atoi(optarg);
+			if (!opts.shift) {
+				printf("Error: block size should be > 0 (-b)\n");
+				return false;
+			}
+			break;
 		case 'R': /* regularization mode */
 			if (strcmp(optarg, "FN") == 0) {
 				opts.rmode = 1;
 			} else if (strcmp(optarg, "APC") == 0) {
 				opts.rmode = 2;
-//			} else if (strcmp(optarg, "BAPC") == 0) {
-//				opts.rmode = 3;
+			} else if (strcmp(optarg, "BAPC") == 0) {
+				opts.rmode = 3;
 			} else {
 				printf("Error: wrong matrix correction mode '%s'\n", optarg);
 				return false;
@@ -241,17 +241,17 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		return false;
 	}
 
-//	if (opts.rmode == 3 && !opts.shift) {
-//		printf(
-//				"Error: block-APC correction requires setting block size '-b'\n");
-//		return false;
-//	}
-//
-//	if (opts.shift && opts.rmode == 2) {
-//		printf(
-//				"Error: setting block size requires FN or BAPC correction '-R'\n");
-//		return false;
-//	}
+	if (opts.rmode == 3 && !opts.shift) {
+		printf(
+				"Error: block-APC correction requires setting block size '-b'\n");
+		return false;
+	}
+
+	if (opts.shift && opts.rmode == 2) {
+		printf(
+				"Error: setting block size requires FN or BAPC correction '-R'\n");
+		return false;
+	}
 
 	return true;
 
@@ -266,10 +266,9 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -n number of iterations (%ld)\n", opts.niter);
 	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
-	printf("          -m list1.txt - residue pairs to be masked\n");
-	printf("          -u list2.txt - residue pairs to be unmasked (all others are masked)\n");
-	printf("          -R contact matrix correction {FN,APC} (APC)\n");
-//	printf("          -b block size for the block-APC correction\n");
+	printf("          -u list.txt - residue pairs to be unmasked\n");
+	printf("          -R contact matrix correction {FN,APC,BAPC...} (BAPC)\n");
+	printf("          -b block size for the block-APC correction\n");
 
 }
 
@@ -294,3 +293,6 @@ EDGE_LIST ReadEdges(const char *name) {
 	return L;
 
 }
+
+
+

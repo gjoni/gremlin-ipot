@@ -267,7 +267,7 @@ ProblemPNAS::ProblemPNAS(const MSAclass &MSA_, size_t n) :
 	 * set regularization params
 	 */
 	lsingle = 0.01;
-	lpair = 0.01; //0.2 * (MSA->ncol - 1);
+	lpair = 0.01; //0.2 * (MSA->GetNcol() - 1);
 
 	/*
 	 * set dimensions
@@ -559,7 +559,6 @@ void ProblemPNAS::fdf(const double *x, double *f, double *g) {
 		reg += 0.5 * lpair * x[v] * x[v];
 		g[v] += 2.0 * lpair * x[v];
 	}
-
 //	for (size_t ij = 0; ij < ncol * ncol; ij++) {
 //
 //		const double *c = x2 + ij * nmodes;
@@ -608,6 +607,11 @@ void ProblemPNAS::GetMRFvector(const double *x, double *mrfx) {
 		for (size_t j = 0; j < ncol; j++) {
 			double *Jij = mrfx + ncol * NAA + (i * ncol + j) * NAA * NAA;
 			const double *cij = x + dim1body + (i * ncol + j) * nmodes;
+			double s = 0.0;
+			for (size_t n = 0; n < nmodes; n++) {
+				s += cij[n] * cij[n];
+			}
+			printf("%.5e ", s);
 			for (size_t a = 0; a < NAA - 1; a++) {
 				for (size_t b = 0; b < NAA - 1; b++) {
 					for (size_t n = 0; n < nmodes; n++) {
@@ -616,6 +620,7 @@ void ProblemPNAS::GetMRFvector(const double *x, double *mrfx) {
 				}
 			}
 		}
+		printf("\n");
 	}
 
 }

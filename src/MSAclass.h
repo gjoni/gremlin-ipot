@@ -11,24 +11,6 @@
 #include <string>
 #include <vector>
 
-/*
- * TODO:
- * ----
- * 1) this class should be able to read A3M files directly
- * 2) cleaning should be incorporated (by masking or weighting ???):
- *     - columns cleaning
- *     - rows cleaning ???
- * 3) weighting - does it belong to this class?
- */
-
-/*
- * Specs:
- *  - read A3M/FASTA, remove lowercase letters
- *  - clean MSA and prepare it for GREMLIN
- *  - append ???
- *  - concat ???
- */
-
 class MSAclass {
 
 	friend class ProblemBase;
@@ -93,6 +75,9 @@ public:
 	/* A3M->MSA mapping*/
 	size_t GetMsaIdx(size_t idx) const;
 
+	/* MSA->A3M mapping*/
+	size_t GetA3MIdx(size_t idx) const;
+
 	/* change residue indices in the array of contacts
 	 * to match the cleaned msa[]
 	 * (contacts with residues missing in the msa[] are omitted) */
@@ -115,7 +100,9 @@ public:
 	void SaveMSA(const std::string &name) const;
 	void PrintMSA() const;
 
-	/* TODO: entropies */
+	void Hx(double *hx) const;
+	void Hxy(double **hxy) const;
+	void MI(double **mi) const;
 
 	/* TODO: list all possible pairs of continuous tuples of length len */
 //	std::vector<std::pair<size_t, size_t> > GetTuples(const MSAclass &MSA,

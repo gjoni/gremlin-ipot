@@ -41,7 +41,7 @@ void ProblemRRCE::Free() {
 }
 
 ProblemRRCE::ProblemRRCE(const MSAclass &MSA_, size_t n) :
-		ProblemBase(MSA_), pot("data/RRCE20RC/table.8.0A_k5"), nmodes(n), em(
+		ProblemBase(MSA_), pot("data/RRCE20RC/table.5.0A_k5"), nmodes(n), em(
 		NULL), ev(NULL), lsingle(0), lpair(0), dim1body(0), dim2body(0) {
 
 	Allocate();
@@ -73,7 +73,7 @@ ProblemRRCE::ProblemRRCE(const MSAclass &MSA_, size_t n) :
 	 * set regularization params
 	 */
 	lsingle = 0.01;
-	lpair = 0.01; //0.2 * (MSA->ncol - 1);
+	lpair = 0.2 * (MSA->ncol - 1);
 
 	/*
 	 * set dimensions
@@ -167,8 +167,10 @@ double ProblemRRCE::f(const double *x) {
 
 					/* add up contributions from all eigenmodes */
 					for (size_t n = 0; n < nmodes; n++) {
-						e[a * ncol + k] += ckj[n]
-								* em[n * 400 + a * 20 + seq[j]];
+						if (seq[j] < 20) {
+							e[a * ncol + k] += ckj[n]
+									* em[n * 400 + a * 20 + seq[j]];
+						}
 					}
 				}
 			}
@@ -279,6 +281,28 @@ void ProblemRRCE::fdf(const double *x, double *f, double *g) {
 		memset(e + (NAA - 1) * ncol, 0, ncol * sizeof(double));
 
 		/* add interactions with all other positions */
+//		for (size_t a = 0; a < NAA - 1; a++) { /* probe every aa identity at position k */
+//			for (size_t k = 0; k < ncol; k++) {
+//
+//				/* total energy of aa _a_ at position k */
+//				double *eka = e + (a * ncol + k);
+//
+//				/* scan through all neighbors */
+//				for (size_t j = 0; j < ncol; j++) {
+//
+//					/* interaction coefficients for edge k -> j */
+//					const double *ckj = x2 + (k * ncol + j) * nmodes;
+//
+//					/* add up contributions from all eigenmodes */
+//					for (size_t n = 0; n < nmodes; n++) {
+//						if (seq[j] < 20) {
+//							*eka += ckj[n] * em[n * 400 + a * 20 + seq[j]];
+//						}
+//					}
+//
+//				}
+//			}
+//		}
 		for (size_t k = 0; k < ncol; k++) {
 
 			for (size_t j = 0; j < ncol; j++) {
@@ -286,7 +310,7 @@ void ProblemRRCE::fdf(const double *x, double *f, double *g) {
 				/* interaction coefficients for edge k -> j */
 				const double *ckj = x2 + (k * ncol + j) * nmodes;
 
-				/* scan through all AA identities at position j */
+				/* scan through all AA identities at position k */
 				for (size_t a = 0; a < NAA - 1; a++) {
 
 					/* add up contributions from all eigenmodes */
@@ -352,12 +376,12 @@ void ProblemRRCE::fdf(const double *x, double *f, double *g) {
 
 				for (size_t n = 0; n < nmodes; n++) {
 
-					double *gg = gaux + (k * ncol + j) * nmodes + n;
-					double *JJ = em + n * 400;
-					*gg -= weight * JJ[seq[k] * 20 + seq[j]];
+					double *gkjn = gaux + (k * ncol + j) * nmodes + n;
+					double *Jn = em + n * 400;
+					*gkjn -= weight * Jn[seq[k] * 20 + seq[j]];
 
 					for (size_t c = 0; c < 20; c++) {
-						*gg += weight * JJ[c * 20 + seq[j]] * p[c * ncol + k];
+						*gkjn += weight * Jn[c * 20 + seq[j]] * p[c * ncol + k];
 					}
 
 				}
@@ -400,29 +424,35 @@ void ProblemRRCE::fdf(const double *x, double *f, double *g) {
 		g[v] += 2.0 * lpair * x[v];
 	}
 
-//	for (size_t ij = 0; ij < ncol * ncol; ij++) {
+//	for (size_t i = 0; i < ncol; i++) {
+//		for (size_t j = 0; j < ncol; j++) {
 //
-//		const double *c = x2 + ij * nmodes;
+//			if (i == j) {
+//				continue;
+//			}
 //
-//		double *rr = (double*) calloc(400, sizeof(double));
-//		for (size_t pq = 0; pq < 400; pq++) {
+//			const double *c = x2 + (i * ncol + j) * nmodes;
+//
+//			double *rr = (double*) calloc(400, sizeof(double));
+//			for (size_t pq = 0; pq < 400; pq++) {
+//				for (size_t n = 0; n < nmodes; n++) {
+//					rr[pq] += em[n * 400 + pq] * c[n];
+//				}
+//			}
+//
+//			for (size_t pq = 0; pq < 400; pq++) {
+//				reg += 0.5 * lpair * rr[pq] * rr[pq];
+//			}
+//
 //			for (size_t n = 0; n < nmodes; n++) {
-//				rr[pq] += em[n * 400 + pq] * c[n];
+//				for (size_t ab = 0; ab < 400; ab++) {
+//					g2[(i * ncol + j) * nmodes + n] += 2.0 * lpair
+//							* em[400 * nmodes + ab] * rr[ab];
+//				}
 //			}
-//		}
 //
-//		for (size_t pq = 0; pq < 400; pq++) {
-//			reg += 0.5 * lpair * rr[pq] * rr[pq];
+//			free(rr);
 //		}
-//
-//		for (size_t n = 0; n < nmodes; n++) {
-//			for (size_t ab = 0; ab < 400; ab++) {
-//				g2[ij * nmodes + n] += 2.0 * lpair * em[400 * nmodes + ab]
-//						* rr[ab];
-//			}
-//		}
-//
-//		free(rr);
 //	}
 
 	*f += reg;
@@ -448,6 +478,11 @@ void ProblemRRCE::GetMRFvector(const double *x, double *mrfx) {
 		for (size_t j = 0; j < ncol; j++) {
 			double *Jij = mrfx + ncol * NAA + (i * ncol + j) * NAA * NAA;
 			const double *cij = x + dim1body + (i * ncol + j) * nmodes;
+			double s = 0.0;
+			for (size_t n = 0; n < nmodes; n++) {
+				s += cij[n] * cij[n];
+			}
+			printf("%.5e ", s);
 			for (size_t a = 0; a < NAA - 1; a++) {
 				for (size_t b = 0; b < NAA - 1; b++) {
 					for (size_t n = 0; n < nmodes; n++) {
@@ -456,6 +491,7 @@ void ProblemRRCE::GetMRFvector(const double *x, double *mrfx) {
 				}
 			}
 		}
+		printf("\n");
 	}
 
 }
