@@ -29,19 +29,12 @@ ProblemBase::ProblemBase(const MSAclass &MSA_) :
 
 	MSAclass::aatoi(msa, dim);
 
-//	double **mi = (double**) malloc(MSA->GetNcol() * sizeof(double*));
-//	for (size_t i = 0; i < MSA->GetNcol(); i++) {
-//		mi[i] = (double*) malloc(MSA->GetNcol() * sizeof(double));
-//	}
-//
-//	MSA->MI(mi);
-
 	UnmaskAllEdges();
 
-//	for (size_t i = 0; i < MSA->GetNcol(); i++) {
-//		free(mi[i]);
-//	}
-//	free(mi);
+	/* copy sequence weights */
+	for (size_t i = 0; i < MSA->nrow; i++) {
+		w[i] = MSA->weight[i];
+	}
 
 }
 

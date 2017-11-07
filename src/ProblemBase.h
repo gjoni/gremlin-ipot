@@ -30,6 +30,7 @@ protected:
 
 	size_t dim; /* problem dimension (number of variables) */
 
+	/* TODO: !!! does not belong to here !!! */
 	double *w; /* sequence weights */
 
 	bool *we; /* for masking (2D array in 1D representation)*/
@@ -52,6 +53,7 @@ public:
 
 	virtual void GetMRFvector(const double *x, double *mrfx) = 0;
 
+	/* TODO: !!! does not belong to here !!! */
 	void Reweight(double t = 0.8);
 
 	/*

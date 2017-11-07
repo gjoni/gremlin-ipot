@@ -27,6 +27,10 @@ private:
 	static void FN(const MRFclass &MRF, double **mtx);
 	static void APC(const MRFclass &MRF, double **mtx);
 
+	/* TODO: Zscore*/
+	static double Zscore(size_t dim, double **mtx);
+
+
 public:
 
 	struct MTX {
@@ -52,6 +56,9 @@ public:
 
 	/* save to file */
 	static void SaveMTX(const MTX &result, const std::string &name);
+
+	/* TODO: convert matrix to z-scores */
+//	static void ToZscores(MTX &result);
 
 	/* 'contact' score */
 	static double GetScore(const MTX &result,

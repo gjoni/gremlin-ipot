@@ -40,6 +40,9 @@ private:
 	size_t nrow; // sequence length - 65536 MAX
 	size_t ncol; // number of sequences in MSA - 65536 MAX
 
+	/* TODO: implement */
+	std::vector<double> weight;
+
 	/* alloc/free msa*/
 	void Allocate();
 	void Free();
@@ -69,8 +72,17 @@ public:
 	/* cleaned MSA dimensions */
 	size_t GetNrow() const;
 	size_t GetNcol() const;
+
+	/* cleaned length of frag */
+	size_t GetLen(size_t frag) const;
+
+	/* reference length */
 	size_t GetLen() const;
-	size_t GetLen(size_t frag) const; /* cleaned length of frag */
+
+	/* simple reweighting */
+	/* TODO: test */
+	void Reweight(double t = 0.8);
+	double GetNeff(); /* sum over weights */
 
 	/* A3M->MSA mapping*/
 	size_t GetMsaIdx(size_t idx) const;
@@ -94,7 +106,8 @@ public:
 	/* rows are cleaned first, then columns */
 	void CleanMsa(double rgaps, double cgaps);
 
-	/* 1d array [nrow x ncol] with the cleaned alignment */
+	/* 1d array [nrow x ncol] with the cleaned alignment
+	 * !!! allocates memory with malloc !!! */
 	unsigned char * GetMsa() const;
 
 	void SaveMSA(const std::string &name) const;

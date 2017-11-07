@@ -127,6 +127,7 @@ double ProblemFull::f(const double *x) {
 
 		/* sequence weight */
 		double weight = w[i];
+//		double weight = MSA->weight[i];
 
 		/* current sequence */
 		unsigned char *seq = msa + i * ncol;

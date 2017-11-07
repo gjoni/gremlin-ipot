@@ -12,6 +12,7 @@
 #include <cstring>
 #include <cassert>
 #include <cmath>
+#include <cfloat>
 
 #include <algorithm>
 
@@ -125,12 +126,16 @@ MSAclass::MSAclass(const char *name) :
 	/* populate msa */
 	Allocate();
 
+	/* set default weights:
+	 * all sequences get a weight of 1 */
+	weight.assign(nrow, 1.0);
+
 }
 
 MSAclass::MSAclass(const MSAclass &source) :
 		a3m(source.a3m), len_ref(source.len_ref), row_map(source.row_map), col_map(
 				source.col_map), a3m_to_msa(source.a3m_to_msa), nrow(
-				source.nrow), ncol(source.ncol) {
+				source.nrow), ncol(source.ncol), weight(source.weight) {
 
 	Allocate();
 
@@ -152,6 +157,8 @@ MSAclass & MSAclass::operator =(const MSAclass & source) {
 
 	nrow = source.nrow;
 	ncol = source.ncol;
+
+	weight = source.weight;
 
 	Allocate();
 
@@ -287,6 +294,9 @@ size_t MSAclass::CleanRows(double gaps_frac) {
 	}
 
 	nrow = row_map.size();
+
+	weight.clear();
+	weight.assign(nrow, 1.0);
 
 	return nrow;
 
@@ -564,3 +574,64 @@ void MSAclass::MI(double **mi) const {
 
 }
 
+void MSAclass::Reweight(double t) {
+
+	size_t idthres = (size_t) ceil(t * ncol);
+
+	weight.assign(nrow, 0.0);
+
+	size_t nij = nrow * (nrow + 1) / 2;
+
+	for (size_t ij = 0; ij < nij; ij++) {
+
+		// compute i and j from ij
+		// http://stackoverflow.com/a/244550/1181102
+		size_t i, j;
+		{
+			size_t ii = nrow * (nrow + 1) / 2 - 1 - ij;
+			size_t K = floor((sqrt(8 * ii + 1) - 1) / 2);
+			i = nrow - 1 - K;
+			j = ij - nrow * i + i * (i + 1) / 2;
+		}
+
+		size_t ids = 0;
+		const char *seqi = a3m[row_map[i]].second.c_str();
+		const char *seqj = a3m[row_map[j]].second.c_str();
+
+		for (size_t k = 0; k < ncol; k++) {
+//			if (msa[i * ncol + k] == msa[j * ncol + k]) {
+//			if (*seqi++ == *seqj++) {
+			if (seqi[col_map[k]] == seqj[col_map[k]]) {
+				ids++;
+			}
+		}
+
+		if (ids > idthres) {
+			weight[i]++;
+			weight[j]++;
+		}
+	}
+
+	double wsum = 0, wmin = DBL_MAX, wmax = DBL_MIN;
+	for (size_t i = 0; i < nrow; i++) {
+		weight[i] = 1. / (weight[i] - 1);
+		wsum += weight[i];
+		wmin = weight[i] < wmin ? weight[i] : wmin;
+		wmax = weight[i] > wmax ? weight[i] : wmax;
+	}
+
+	printf("# threshold= %.1f Beff= %g mean= %g min= %g max= %g\n", t, wsum,
+			wsum / nrow, wmin, wmax);
+
+}
+
+double MSAclass::GetNeff() {
+
+	double wsum = 0;
+	for (size_t i = 0; i < nrow; i++) {
+		wsum += weight[i];
+	}
+
+	return wsum;
+
+}

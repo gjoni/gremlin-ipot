@@ -11,10 +11,11 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
-#include "ProblemRRCE.h"
-#include "ProblemPNAS.h"
+//#include "ProblemRRCE.h"
+//#include "ProblemPNAS.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
+#include "ContactList.h"
 
 /* TODO: separate programs
  * 1) gremlin3 - produces an MRF
@@ -45,9 +46,6 @@ struct OPTS {
 //	size_t shift; /* block A for block-APC */
 };
 
-typedef std::map<std::string, std::vector<std::pair<size_t, size_t> > > EDGE_LIST;
-EDGE_LIST ReadEdges(const char *name);
-
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
 
@@ -67,6 +65,7 @@ int main(int argc, char *argv[]) {
 	 */
 	MSAclass MSA(opts.a3m);
 	MSA.CleanMsa(opts.grow, opts.gcol);
+	MSA.Reweight();
 
 	/*
 	 * (2) read edge constraints
@@ -85,8 +84,10 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-//	ProblemPNAS P(MSA, 2);
-//	ProblemRRCE P(MSA, 7);
+	/*
+	 ProblemPNAS P(MSA, 2);
+	 ProblemRRCE P(MSA, 7);
+	 */
 	ProblemFull P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
@@ -139,7 +140,8 @@ int main(int argc, char *argv[]) {
 			MRFprocessor::APC(MRF, result);
 			break;
 //		case 3:
-//			MRFprocessor::BAPC(MRF, result, opts.shift);
+//			printf("# Contact matrix correction: PROB\n");
+//			MRFprocessor::APC(MRF, result);
 //			break;
 		default:
 			printf("!!! ACHTUNG !!! (this should never happen)\n");
@@ -223,7 +225,7 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				opts.rmode = 1;
 			} else if (strcmp(optarg, "APC") == 0) {
 				opts.rmode = 2;
-//			} else if (strcmp(optarg, "BAPC") == 0) {
+//			} else if (strcmp(optarg, "PROB") == 0) {
 //				opts.rmode = 3;
 			} else {
 				printf("Error: wrong matrix correction mode '%s'\n", optarg);
@@ -267,30 +269,10 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
 	printf("          -m list1.txt - residue pairs to be masked\n");
-	printf("          -u list2.txt - residue pairs to be unmasked (all others are masked)\n");
-	printf("          -R contact matrix correction {FN,APC} (APC)\n");
+	printf(
+			"          -u list2.txt - residue pairs to be unmasked (all others are masked)\n");
+	printf("          -R contact matrix correction {FN,APC,PROB} (APC)\n");
 //	printf("          -b block size for the block-APC correction\n");
 
 }
 
-EDGE_LIST ReadEdges(const char *name) {
-
-	EDGE_LIST L;
-
-	FILE *F = fopen(name, "r");
-	if (F == NULL) {
-		printf("Error: cannot open file for reading '%s'\n", name);
-		exit(1);
-	}
-
-	size_t a, b;
-	const size_t SIZE = 256;
-	char buf[SIZE];
-	while (fscanf(F, "%lu %lu %s\n", &a, &b, buf) == 3) {
-		L[buf].push_back(std::make_pair(a, b));
-	}
-	fclose(F);
-
-	return L;
-
-}
