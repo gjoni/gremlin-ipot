@@ -345,6 +345,8 @@ double PairEnergies(const MSAclass &MSA, double **mtx) {
 
 	}
 
+	free(msa);
+
 	for (size_t p = 0; p < ncol; p++) {
 		for (size_t q = p + 1; q < ncol; q++) {
 			mtx[p][q] /= nrow;

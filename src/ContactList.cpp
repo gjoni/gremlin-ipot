@@ -65,7 +65,7 @@ void ContactList::AddFeature(const std::string &name, double **mtx) {
 void ContactList::Print() const {
 
 	/* print caption */
-	printf("%10s%10s%12s", "Residue1", "Residue2", "Score");
+	printf("#%9s%10s%12s", "Residue1", "Residue2", "Score");
 	for (auto &str : fname) {
 		printf("%12s", str.c_str());
 	}
@@ -93,7 +93,7 @@ void ContactList::Print() const {
 void ContactList::Print(const MSAclass &MSA) const {
 
 	/* print caption */
-	printf("%10s%10s%12s", "Residue1", "Residue2", "Score");
+	printf("#%9s%10s%12s", "Residue1", "Residue2", "Score");
 	for (auto &str : fname) {
 		printf("%12s", str.c_str());
 	}
