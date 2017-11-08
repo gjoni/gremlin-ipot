@@ -11,8 +11,6 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
-//#include "ProblemRRCE.h"
-//#include "ProblemPNAS.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
@@ -70,18 +68,20 @@ int main(int argc, char *argv[]) {
 	MSA.CleanMsa(opts.grow, opts.gcol);
 	MSA.Reweight();
 
-	/*
-	 * (2) calculate basic MSA statistics
-	 *     and save it
-	 */
+	/* temp storage for variour scores */
 	size_t ncol = MSA.GetNcol();
-	ContactList Contacts(ncol);
-	Contacts.AddTerm( { "log(Neff)", log(MSA.GetNeff()) });
-	Contacts.AddTerm( { "log(Ncol)", log(ncol) });
 	double **mtx = (double**) malloc(ncol * sizeof(double*));
 	for (size_t i = 0; i < ncol; i++) {
 		mtx[i] = (double*) malloc(ncol * sizeof(double));
 	}
+
+	/*
+	 * (2) calculate basic MSA statistics
+	 *     and save it
+	 */
+	ContactList Contacts(ncol);
+	Contacts.AddTerm( { "log(Neff)", log(MSA.GetNeff()) });
+	Contacts.AddTerm( { "log(Ncol)", log(ncol) });
 
 	/* mutual information */
 	MSA.MI(mtx);
@@ -132,61 +132,71 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (4) solve P
 	 */
-	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
+	MRFclass MRF;
+	if (opts.rmode > 0) {
+		MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
+	}
 
 	/*
 	 * (5) save MRF
 	 */
-	if (opts.mrf != NULL) {
+	if (opts.mrf != NULL && opts.rmode > 0) {
 		MRF.Save(opts.mrf);
 	}
 
 	/*
 	 * (6) do MRF post-processing
 	 */
-	if (opts.mtx != NULL) {
-		MRFprocessor::MTX result;
-		switch (opts.rmode) {
-		case 1:
-			printf("# Contact matrix correction: FN\n");
-			MRFprocessor::FN(MRF, result);
-			break;
-		case 2:
-			printf("# Contact matrix correction: APC\n");
-			MRFprocessor::APC(MRF, result);
-			break;
-		case 3:
-			printf("# Contact matrix correction: PROB\n");
-			MRFprocessor::APC(MRF, result);
-			MRFprocessor::APC(MRF, mtx);
-			MRFprocessor::Zscore(ncol, mtx);
-			Contacts.AddFeature("Z(APC)", mtx);
-			break;
-		default:
-			printf("!!! ACHTUNG !!! (this should never happen)\n");
-			return 1;
-		}
-		MRFprocessor::SaveMTX(result, opts.mtx);
-
-		/*
-		 * (7) calculate per group scores
-		 */
-		if (opts.umask != NULL) {
-			for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-				std::vector<std::pair<size_t, size_t> > vec = MSA.CastToMsa(
-						it->second);
-				double score = MRFprocessor::GetScore(result, vec);
-				double energy = MRF.GetPairEnergies(MSA, vec);
-				printf("# Score(%s)= %.6e, Energy(%s)= %.6e\n",
-						it->first.c_str(), score, it->first.c_str(), energy);
-			}
-		}
+	switch (opts.rmode) {
+	case 0:
+		printf("# Contact matrix correction: ZILCH\n");
+		break;
+	case 1:
+		printf("# Contact matrix correction: FN\n");
+		MRFprocessor::FN(MRF, mtx);
+		Contacts.AddFeature("FN", mtx);
+		break;
+	case 2:
+		printf("# Contact matrix correction: APC\n");
+		MRFprocessor::APC(MRF, mtx);
+		Contacts.AddFeature("APC", mtx);
+		break;
+	case 3:
+		printf("# Contact matrix correction: PROB\n");
+		MRFprocessor::APC(MRF, mtx);
+		MRFprocessor::Zscore(ncol, mtx);
+		Contacts.AddFeature("Z(APC)", mtx);
+		break;
+	default:
+		printf("!!! ACHTUNG !!! (this should never happen)\n");
+		return 1;
 	}
 
 	/*
+	 * (7) save MTX
+	 */
+	if (opts.mtx != NULL) {
+		Contacts.SaveMTX(opts.mtx, MSA);
+	}
+
+	/*
+	 * (7) calculate per group scores
+	 */
+//	if (opts.umask != NULL) {
+//		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
+//			std::vector<std::pair<size_t, size_t> > vec = MSA.CastToMsa(
+//					it->second);
+//			double score = MRFprocessor::GetScore(result, vec);
+//			double energy = MRF.GetPairEnergies(MSA, vec);
+//			printf("# Score(%s)= %.6e, Energy(%s)= %.6e\n", it->first.c_str(),
+//					score, it->first.c_str(), energy);
+//		}
+//	}
+//	}
+	/*
 	 *
 	 */
-	Contacts.Print();
+	Contacts.Print(MSA);
 
 	/*
 	 * free
@@ -245,13 +255,6 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		case 'u': /* a list of residue pairs to be unmasked */
 			opts.umask = optarg;
 			break;
-//		case 'b':
-//			opts.shift = atoi(optarg);
-//			if (!opts.shift) {
-//				printf("Error: block size should be > 0 (-b)\n");
-//				return false;
-//			}
-//			break;
 		case 'R': /* regularization mode */
 			if (strcmp(optarg, "FN") == 0) {
 				opts.rmode = 1;
@@ -259,6 +262,8 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				opts.rmode = 2;
 			} else if (strcmp(optarg, "PROB") == 0) {
 				opts.rmode = 3;
+			} else if (strcmp(optarg, "ZILCH") == 0) {
+				opts.rmode = 0;
 			} else {
 				printf("Error: wrong matrix correction mode '%s'\n", optarg);
 				return false;
@@ -274,18 +279,6 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		printf("Error: A3M file not specified\n");
 		return false;
 	}
-
-//	if (opts.rmode == 3 && !opts.shift) {
-//		printf(
-//				"Error: block-APC correction requires setting block size '-b'\n");
-//		return false;
-//	}
-//
-//	if (opts.shift && opts.rmode == 2) {
-//		printf(
-//				"Error: setting block size requires FN or BAPC correction '-R'\n");
-//		return false;
-//	}
 
 	return true;
 

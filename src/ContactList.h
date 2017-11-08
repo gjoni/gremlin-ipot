@@ -16,6 +16,8 @@
 #include <map>
 #include <utility>
 
+#include "MSAclass.h"
+
 /*
  * basic structure to store information on a contact
  */
@@ -47,7 +49,6 @@ struct Contact {
 //bool operator ==(const Contact &a, const Contact &b) {
 //	return a.score == b.score;
 //}
-
 /*
  * named lists of edges
  */
@@ -96,7 +97,13 @@ public:
 	/*
 	 * output
 	 */
-	void Print();
+
+	void Print() const;
+	void Print(const MSAclass &MSA) const;
+
+	void SaveMTX(const char *name) const;
+	void SaveMTX(const char *name, const MSAclass &MSA) const;
+
 //	void Save();
 //	void SaveMTX();
 
