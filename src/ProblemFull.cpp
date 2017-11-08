@@ -59,7 +59,6 @@ ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
 
 	AllocateBase();
 
-	memcpy(w, source.w, MSA->nrow * sizeof(double));
 	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(double));
 
 	return *this;
@@ -126,8 +125,7 @@ double ProblemFull::f(const double *x) {
 	for (size_t i = 0; i < nrow; i++) {
 
 		/* sequence weight */
-		double weight = w[i];
-//		double weight = MSA->weight[i];
+		double weight = MSA->weight[i];
 
 		/* current sequence */
 		unsigned char *seq = msa + i * ncol;
@@ -221,7 +219,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 #pragma omp parallel for
 	for (size_t i = 0; i < nrow; i++) {
 
-		double weight = w[i];
+		double weight = MSA->weight[i];
 		unsigned char *seq = msa + i * ncol;
 
 		/* precomputed energies of every letter

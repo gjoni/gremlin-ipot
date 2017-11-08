@@ -11,36 +11,28 @@
 #include "ProblemBase.h"
 
 ProblemBase::ProblemBase() :
-		MSA(NULL), msa(NULL), dim(0), w(NULL), we(NULL) {
+		MSA(NULL), msa(NULL), dim(0), we(NULL) {
 
 	/* */
 
 }
 
 ProblemBase::ProblemBase(const MSAclass &MSA_) :
-		MSA(&MSA_), msa(NULL), dim(MSA_.GetNcol() * MSA_.GetNrow()), w(NULL), we(
+		MSA(&MSA_), msa(NULL), dim(MSA_.GetNcol() * MSA_.GetNrow()), we(
 		NULL) {
 
 	AllocateBase();
 
 	msa = MSA->GetMsa();
 
-	Reweight();
-
 	MSAclass::aatoi(msa, dim);
 
 	UnmaskAllEdges();
 
-	/* copy sequence weights */
-	for (size_t i = 0; i < MSA->nrow; i++) {
-		w[i] = MSA->weight[i];
-	}
-
 }
 
 ProblemBase::ProblemBase(const ProblemBase &source) :
-		MSA(source.MSA), msa(NULL), dim(source.MSA->ncol * source.MSA->nrow), w(
-		NULL), we(
+		MSA(source.MSA), msa(NULL), dim(source.MSA->ncol * source.MSA->nrow), we(
 		NULL) {
 
 	AllocateBase();
@@ -50,7 +42,6 @@ ProblemBase::ProblemBase(const ProblemBase &source) :
 	msa = (unsigned char *) malloc(msa_dim * sizeof(unsigned char));
 
 	memcpy(msa, source.msa, msa_dim * sizeof(unsigned char));
-	memcpy(w, source.w, MSA->nrow * sizeof(double));
 	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(bool));
 
 }
@@ -58,64 +49,6 @@ ProblemBase::ProblemBase(const ProblemBase &source) :
 ProblemBase::~ProblemBase() {
 
 	FreeBase();
-
-}
-
-void ProblemBase::Reweight(double t) {
-
-	size_t ncol = MSA->ncol;
-	size_t nrow = MSA->nrow;
-
-	size_t idthres = (size_t) ceil(t * ncol);
-
-	memset(w, 0, sizeof(double) * nrow);
-
-	size_t nij = nrow * (nrow + 1) / 2;
-
-	for (size_t ij = 0; ij < nij; ij++) {
-
-		// compute i and j from ij
-		// http://stackoverflow.com/a/244550/1181102
-		size_t i, j;
-		{
-			size_t ii = nrow * (nrow + 1) / 2 - 1 - ij;
-			size_t K = floor((sqrt(8 * ii + 1) - 1) / 2);
-			i = nrow - 1 - K;
-			j = ij - nrow * i + i * (i + 1) / 2;
-		}
-
-		size_t ids = 0;
-		for (size_t k = 0; k < ncol; k++) {
-			if (msa[i * ncol + k] == msa[j * ncol + k]) {
-				ids++;
-			}
-		}
-
-		if (ids > idthres) {
-			w[i]++;
-			w[j]++;
-		}
-	}
-
-	for (size_t i = 0; i < nrow; i++) {
-		w[i] = 1. / (w[i] - 1);
-	}
-
-	double wsum = 0;
-	double wmin = w[0], wmax = w[0];
-	for (size_t i = 0; i < nrow; i++) {
-		double wt = w[i];
-		wsum += wt;
-		if (wt > wmax) {
-			wmax = wt;
-		}
-		if (wt < wmin) {
-			wmin = wt;
-		}
-	}
-
-	printf("# threshold= %.1f Beff= %g mean= %g min= %g max= %g\n", t, wsum,
-			wsum / nrow, wmin, wmax);
 
 }
 
@@ -173,14 +106,12 @@ void ProblemBase::MaskAllEdges() {
 
 void ProblemBase::AllocateBase() {
 
-	w = (double*) malloc(MSA->nrow * sizeof(double));
 	we = (bool*) malloc(MSA->ncol * MSA->ncol * sizeof(bool));
 
 }
 
 void ProblemBase::FreeBase() {
 
-	free(w);
 	free(we);
 	free(msa);
 

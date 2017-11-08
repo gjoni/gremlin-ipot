@@ -294,7 +294,7 @@ double ProblemPNAS::f(const double *x) {
 	for (size_t i = 0; i < nrow; i++) {
 
 		/* sequence weight */
-		double weight = w[i];
+		double weight = MSA->GetWeight(i);
 
 		/* current sequence */
 		unsigned char *seq = msa + i * ncol;
@@ -407,7 +407,8 @@ void ProblemPNAS::fdf(const double *x, double *f, double *g) {
 	/* loop over all sequences in the MSA */
 	for (size_t i = 0; i < nrow; i++) {
 
-		double weight = w[i];
+		double weight = MSA->GetWeight(i);
+
 		unsigned char *seq = msa + i * ncol;
 
 		/* precomputed energies of every letter

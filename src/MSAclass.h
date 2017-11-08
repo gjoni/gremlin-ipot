@@ -16,6 +16,7 @@ class MSAclass {
 	friend class ProblemBase;
 	friend class ProblemFull;
 	friend class ProblemRRCE;
+	friend class ProblemPNAS;
 	friend class MRFclass;
 
 private:
@@ -40,7 +41,7 @@ private:
 	size_t nrow; // sequence length - 65536 MAX
 	size_t ncol; // number of sequences in MSA - 65536 MAX
 
-	/* TODO: implement */
+	/* seqeunce weights (CLEANED alignment) */
 	std::vector<double> weight;
 
 	/* alloc/free msa*/
@@ -79,10 +80,10 @@ public:
 	/* reference length */
 	size_t GetLen() const;
 
-	/* simple reweighting */
-	/* TODO: test */
+	/* sequence reweighting */
 	void Reweight(double t = 0.8);
-	double GetNeff(); /* sum over weights */
+	double GetWeight(size_t i) const;
+	double GetNeff() const; /* sum over weights */
 
 	/* A3M->MSA mapping*/
 	size_t GetMsaIdx(size_t idx) const;
@@ -109,6 +110,8 @@ public:
 	/* 1d array [nrow x ncol] with the cleaned alignment
 	 * !!! allocates memory with malloc !!! */
 	unsigned char * GetMsa() const;
+
+	const std::string& GetSequence(size_t i) const;
 
 	void SaveMSA(const std::string &name) const;
 	void PrintMSA() const;

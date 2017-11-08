@@ -56,6 +56,11 @@ public:
 	void GetCouplings(double **J);
 	void GetFields(double *h);
 
+	double GetJij(size_t i, size_t j) {
+		return J[i][j];
+	}
+	;
+
 };
 
 #endif /* RRCE_H_ */

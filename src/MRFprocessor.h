@@ -24,12 +24,6 @@ private:
 	~MRFprocessor();
 
 	static double FNorm(const double *x, size_t dim);
-	static void FN(const MRFclass &MRF, double **mtx);
-	static void APC(const MRFclass &MRF, double **mtx);
-
-	/* TODO: Zscore*/
-	static double Zscore(size_t dim, double **mtx);
-
 
 public:
 
@@ -37,6 +31,11 @@ public:
 		std::vector<double> mtx1d; /* 1d array [dim x dim] */
 		size_t dim;
 	};
+
+	static void FN(const MRFclass &MRF, double **mtx);
+	static void APC(const MRFclass &MRF, double **mtx);
+	/* TODO: Zscore*/
+	static void Zscore(size_t dim, double **mtx);
 
 	/* TODO */
 //	MRFprocessor(const MSAclass &MSA, const MRFclass &MRF);

@@ -16,6 +16,7 @@
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
+#include "RRCE.h"
 
 /* TODO: separate programs
  * 1) gremlin3 - produces an MRF
@@ -49,6 +50,8 @@ struct OPTS {
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
 
+double PairEnergies(const MSAclass &MSA, double **mtx);
+
 int main(int argc, char *argv[]) {
 
 	/*
@@ -68,7 +71,32 @@ int main(int argc, char *argv[]) {
 	MSA.Reweight();
 
 	/*
-	 * (2) read edge constraints
+	 * (2) calculate basic MSA statistics
+	 *     and save it
+	 */
+	size_t ncol = MSA.GetNcol();
+	ContactList Contacts(ncol);
+	Contacts.AddTerm( { "log(Neff)", log(MSA.GetNeff()) });
+	Contacts.AddTerm( { "log(Ncol)", log(ncol) });
+	double **mtx = (double**) malloc(ncol * sizeof(double*));
+	for (size_t i = 0; i < ncol; i++) {
+		mtx[i] = (double*) malloc(ncol * sizeof(double));
+	}
+
+	/* mutual information */
+	MSA.MI(mtx);
+	Contacts.AddFeature("MI", mtx);
+
+	/* joint entropy */
+	MSA.Hxy(mtx);
+	Contacts.AddFeature("Hxy", mtx);
+
+	/* statistical potential */
+	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
+	Contacts.AddFeature("RRCE", mtx);
+
+	/*
+	 * (3) read edge constraints
 	 */
 	EDGE_LIST L;
 	if (opts.mask != NULL) {
@@ -107,18 +135,6 @@ int main(int argc, char *argv[]) {
 	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
 
 	/*
-	 {
-	 std::vector<double> v = MRF.ScoreMSA(MSA);
-	 double E = 0.0;
-	 for (size_t i = 0; i < v.size(); i++) {
-	 E += v[i];
-	 }
-	 E /= v.size();
-	 printf("# <E_sequence>= %f\n", E);
-	 }
-	 */
-
-	/*
 	 * (5) save MRF
 	 */
 	if (opts.mrf != NULL) {
@@ -139,10 +155,13 @@ int main(int argc, char *argv[]) {
 			printf("# Contact matrix correction: APC\n");
 			MRFprocessor::APC(MRF, result);
 			break;
-//		case 3:
-//			printf("# Contact matrix correction: PROB\n");
-//			MRFprocessor::APC(MRF, result);
-//			break;
+		case 3:
+			printf("# Contact matrix correction: PROB\n");
+			MRFprocessor::APC(MRF, result);
+			MRFprocessor::APC(MRF, mtx);
+			MRFprocessor::Zscore(ncol, mtx);
+			Contacts.AddFeature("Z(APC)", mtx);
+			break;
 		default:
 			printf("!!! ACHTUNG !!! (this should never happen)\n");
 			return 1;
@@ -163,6 +182,19 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+
+	/*
+	 *
+	 */
+	Contacts.Print();
+
+	/*
+	 * free
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		free(mtx[i]);
+	}
+	free(mtx);
 
 	return 0;
 
@@ -225,8 +257,8 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				opts.rmode = 1;
 			} else if (strcmp(optarg, "APC") == 0) {
 				opts.rmode = 2;
-//			} else if (strcmp(optarg, "PROB") == 0) {
-//				opts.rmode = 3;
+			} else if (strcmp(optarg, "PROB") == 0) {
+				opts.rmode = 3;
 			} else {
 				printf("Error: wrong matrix correction mode '%s'\n", optarg);
 				return false;
@@ -269,10 +301,64 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
 	printf("          -m list1.txt - residue pairs to be masked\n");
-	printf(
-			"          -u list2.txt - residue pairs to be unmasked (all others are masked)\n");
+	printf("          -u list2.txt - residue pairs to be unmasked "
+			"(all others are masked)\n");
 	printf("          -R contact matrix correction {FN,APC,PROB} (APC)\n");
 //	printf("          -b block size for the block-APC correction\n");
 
 }
 
+double PairEnergies(const MSAclass &MSA, double **mtx) {
+
+	double E = 0.0;
+
+	RRCE RRCE_(RRCE::RRCE20RC, 7.8, 5);
+
+	size_t nrow = MSA.GetNrow();
+	size_t ncol = MSA.GetNcol();
+
+	unsigned char * msa = MSA.GetMsa();
+	MSAclass::aatoi(msa, nrow * ncol);
+
+	for (size_t i = 0; i < ncol; i++) {
+		memset(mtx[i], 0, ncol * sizeof(double));
+	}
+
+	for (size_t i = 0; i < nrow; i++) {
+
+		unsigned char *seq = msa + i * ncol;
+		double w = MSA.GetWeight(i);
+
+		for (size_t p = 0; p < ncol; p++) {
+			unsigned char a = seq[p];
+			if (a < 0 || a >= 20) {
+				continue;
+			}
+
+			for (size_t q = p + 1; q < ncol; q++) {
+
+				unsigned char b = seq[q];
+				if (b < 0 || b >= 20) {
+					continue;
+				}
+
+				double j = RRCE_.GetJij(a, b);
+				mtx[p][q] += j * w;
+				E += j;
+
+			}
+
+		}
+
+	}
+
+	for (size_t p = 0; p < ncol; p++) {
+		for (size_t q = p + 1; q < ncol; q++) {
+			mtx[p][q] /= nrow;
+			mtx[q][p] = mtx[p][q];
+		}
+	}
+
+	return 2.0 * E / (ncol - 1) / ncol;
+
+}

@@ -303,3 +303,34 @@ double MRFprocessor::GetScore(const MTX &result,
 	return E;
 
 }
+
+void MRFprocessor::Zscore(size_t dim, double **mtx) {
+
+	/* calculate average */
+	double av = 0.0;
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			av += mtx[i][j];
+		}
+	}
+	av = 2.0 * av / dim / (dim - 1);
+
+	/* calculate standard deviation */
+	double std = 0.0;
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			double d = mtx[i][j] - av;
+			std += d * d;
+		}
+	}
+	std = sqrt(2.0 * std / dim / (dim - 1));
+
+	/* update matrix */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			double x = (mtx[i][j] - av) / std;
+			mtx[i][j] = mtx[j][i] = x;
+		}
+	}
+
+}

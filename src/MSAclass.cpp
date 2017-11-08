@@ -558,8 +558,8 @@ void MSAclass::MI(double **mi) const {
 	for (size_t i = 0; i < ncol; i++) {
 		for (size_t j = 0; j < ncol; j++) {
 			mi[i][j] = hx[i] + hx[j] - hxy[i][j];
-			printf("%ld %ld %.4f %.4f %.4f %.4f\n", i + 1, j + 1, hx[i], hx[j],
-					hxy[i][j], mi[i][j]);
+//				printf("%ld %ld %.4f %.4f %.4f %.4f\n", i + 1, j + 1, hx[i], hx[j],
+//						hxy[i][j], mi[i][j]);
 		}
 	}
 
@@ -575,6 +575,8 @@ void MSAclass::MI(double **mi) const {
 }
 
 void MSAclass::Reweight(double t) {
+
+	assert(t > 0.0 && t < 1.0); /* out of range */
 
 	size_t idthres = (size_t) ceil(t * ncol);
 
@@ -625,7 +627,14 @@ void MSAclass::Reweight(double t) {
 
 }
 
-double MSAclass::GetNeff() {
+double MSAclass::GetWeight(size_t i) const {
+
+	assert(i >= 0 && i < nrow); /* out of range */
+	return weight[i];
+
+}
+
+double MSAclass::GetNeff() const {
 
 	double wsum = 0;
 	for (size_t i = 0; i < nrow; i++) {
@@ -633,5 +642,13 @@ double MSAclass::GetNeff() {
 	}
 
 	return wsum;
+
+}
+
+const std::string& MSAclass::GetSequence(size_t i) const {
+
+	assert(i >= 0 && i < a3m.size()); /* out of range */
+
+	return a3m[i].second;
 
 }
