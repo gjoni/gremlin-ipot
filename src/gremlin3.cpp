@@ -11,6 +11,7 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
+#include "ProblemFullAsym.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
@@ -42,7 +43,8 @@ struct OPTS {
 	char *mask;
 	char *umask;
 	int rmode; /* regularization mode */
-//	size_t shift; /* block A for block-APC */
+	double lpair;
+	double lskew;
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
@@ -55,7 +57,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 2 };
+	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 2, 0.2, 0.2 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -116,7 +118,10 @@ int main(int argc, char *argv[]) {
 	 ProblemPNAS P(MSA, 2);
 	 ProblemRRCE P(MSA, 7);
 	 */
-	ProblemFull P(MSA);
+
+	ProblemFullAsym P(MSA);
+	P.SetL2(opts.lpair, opts.lskew);
+
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
@@ -213,7 +218,7 @@ int main(int argc, char *argv[]) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:p:s:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -269,6 +274,20 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				return false;
 			}
 			break;
+		case 'p': /* lpair - pair penalty (symmetric) */
+			opts.lpair = atof(optarg);
+			if (opts.lpair <= 0.0) {
+				printf("Error: 'lpair' should be positive (-p)\n");
+				return false;
+			}
+			break;
+		case 's': /* lskew - asymmetric penalty for couplings */
+			opts.lskew = atof(optarg);
+			if (opts.lskew <= 0.0) {
+				printf("Error: 'lskew' should be positive (-s)\n");
+				return false;
+			}
+			break;
 		default:
 			return false;
 			break;
@@ -297,7 +316,8 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -u list2.txt - residue pairs to be unmasked "
 			"(all others are masked)\n");
 	printf("          -R contact matrix correction {FN,APC,PROB} (APC)\n");
-//	printf("          -b block size for the block-APC correction\n");
+	printf("          -p lpair\n");
+	printf("          -s lskew\n");
 
 }
 
