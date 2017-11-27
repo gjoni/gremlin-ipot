@@ -61,6 +61,11 @@ public:
 	}
 	;
 
+	double GetHi(size_t i) {
+		return h[i];
+	}
+	;
+
 };
 
 #endif /* RRCE_H_ */

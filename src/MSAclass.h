@@ -42,8 +42,12 @@ private:
 	size_t nrow; // sequence length - 65536 MAX
 	size_t ncol; // number of sequences in MSA - 65536 MAX
 
-	/* seqeunce weights (CLEANED alignment) */
+	/* sequence weights (CLEANED alignment) */
 	std::vector<double> weight;
+
+	/* 1-site frequencies (CLEANED alignment) */
+	std::vector<std::vector<double> > fi; /* ncol * NAA */
+	void SetFreq();
 
 	/* alloc/free msa*/
 	void Allocate();
@@ -121,9 +125,8 @@ public:
 	void Hxy(double **hxy) const;
 	void MI(double **mi) const;
 
-	/* TODO: list all possible pairs of continuous tuples of length len */
-//	std::vector<std::pair<size_t, size_t> > GetTuples(const MSAclass &MSA,
-//			size_t len);
+	double GetFi(size_t i, unsigned char a) const;
+
 };
 
 #endif /* MSACLASS_H_ */

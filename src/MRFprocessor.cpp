@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <cassert>
 
 #include "MRFprocessor.h"
 #include "MSAclass.h"
@@ -28,7 +29,7 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 	}
 	mean /= dim * dim;
 
-	/* TODO: subtracting of means gives almost no effect */
+	/* TODO: subtracting means gives almost no effect */
 
 	for (size_t a = 0; a < dim - 1; a++) {
 		for (size_t b = 0; b < dim - 1; b++) {
@@ -38,6 +39,93 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 	}
 
 	return sqrt(norm);
+
+}
+
+void MRFprocessor::DI(const MRFclass &MRF, const MSAclass &MSA, double **mtx) {
+
+	assert(MRF.GetDim() == MSA.GetNcol()); /* MRF/MSA size mismatch */
+
+	size_t ncol = MRF.GetDim();
+	size_t NAA = MSAclass::NAA;
+
+	/* initialize mtx with zeroes */
+	for (size_t i = 0; i < ncol; i++) {
+		memset(mtx[i], 0, ncol * sizeof(double));
+	}
+
+	/*
+	 * 1-site probabilities
+	 */
+	double **Pi = (double**) malloc(ncol * sizeof(double*));
+	for (size_t i = 0; i < ncol; i++) {
+
+		Pi[i] = (double*) malloc((NAA - 1) * sizeof(double));
+
+		double *hi = MRF.h + i * NAA;
+		double Z = 0.0;
+		for (size_t a = 0; a < NAA - 1; a++) {
+			Pi[i][a] = exp(hi[a]);
+			Z += Pi[i][a];
+		}
+
+		for (size_t a = 0; a < NAA - 1; a++) {
+			Pi[i][a] /= Z;
+		}
+
+	}
+
+	/*
+	 * 2-site probabilities
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		double *hi = MRF.h + i * NAA;
+		for (size_t j = i + 1; j < ncol; j++) {
+			double Zij = 0.0;
+			double *Jij = MRF.J + (i * ncol + j) * NAA * NAA;
+			double *hj = MRF.h + j * NAA;
+
+			double **eab = (double**) malloc((NAA - 1) * sizeof(double*));
+			for (size_t a = 0; a < NAA - 1; a++) {
+				eab[a] = (double*) malloc((NAA - 1) * sizeof(double));
+				for (size_t b = 0; b < NAA - 1; b++) {
+					eab[a][b] = Jij[a * NAA + b] + hi[a] + hj[b];
+					Zij += exp(eab[a][b]);
+				}
+			}
+
+//			for (size_t a = 0; a < NAA - 1; a++) {
+//				for (size_t b = 0; b < NAA - 1; b++) {
+//					double pab = exp(eab[a][b]) / Zij;
+//					mtx[i][j] += pab * log(pab / Pi[i][a] / Pi[j][b]);
+//				}
+//				free(eab[a]);
+//			}
+//			free(eab);
+
+			for (size_t a = 0; a < NAA - 1; a++) {
+				double fa = MSA.GetFi(i, a);
+				for (size_t b = 0; b < NAA - 1; b++) {
+					double pab = exp(eab[a][b]) / Zij;
+					double fb = MSA.GetFi(j, b);
+					mtx[i][j] += pab * log(pab / fa / fb);
+				}
+				free(eab[a]);
+			}
+			free(eab);
+
+			mtx[j][i] = mtx[i][j];
+
+		}
+	}
+
+	/*
+	 * free
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		free(Pi[i]);
+	}
+	free(Pi);
 
 }
 

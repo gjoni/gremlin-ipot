@@ -32,9 +32,9 @@ public:
 		size_t dim;
 	};
 
+	static void DI(const MRFclass &MRF, const MSAclass &MSA, double **mtx);
 	static void FN(const MRFclass &MRF, double **mtx);
 	static void APC(const MRFclass &MRF, double **mtx);
-	/* TODO: Zscore*/
 	static void Zscore(size_t dim, double **mtx);
 
 	/* TODO */
@@ -58,7 +58,6 @@ public:
 
 	/* TODO: convert matrix to z-scores */
 //	static void ToZscores(MTX &result);
-
 	/* 'contact' score */
 	static double GetScore(const MTX &result,
 			const std::vector<std::pair<size_t, size_t> > &contacts);

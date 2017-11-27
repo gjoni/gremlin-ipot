@@ -130,12 +130,16 @@ MSAclass::MSAclass(const char *name) :
 	 * all sequences get a weight of 1 */
 	weight.assign(nrow, 1.0);
 
+	/* set frequencies (with pseudocounts) */
+	SetFreq();
+
 }
 
 MSAclass::MSAclass(const MSAclass &source) :
 		a3m(source.a3m), len_ref(source.len_ref), row_map(source.row_map), col_map(
 				source.col_map), a3m_to_msa(source.a3m_to_msa), nrow(
-				source.nrow), ncol(source.ncol), weight(source.weight) {
+				source.nrow), ncol(source.ncol), weight(source.weight), fi(
+				source.fi) {
 
 	Allocate();
 
@@ -159,6 +163,8 @@ MSAclass & MSAclass::operator =(const MSAclass & source) {
 	ncol = source.ncol;
 
 	weight = source.weight;
+
+	fi = source.fi;
 
 	Allocate();
 
@@ -297,6 +303,8 @@ size_t MSAclass::CleanRows(double gaps_frac) {
 
 	weight.clear();
 	weight.assign(nrow, 1.0);
+
+	SetFreq();
 
 	return nrow;
 
@@ -625,6 +633,8 @@ void MSAclass::Reweight(double t) {
 	printf("# threshold= %.1f Beff= %g mean= %g min= %g max= %g\n", t, wsum,
 			wsum / nrow, wmin, wmax);
 
+	SetFreq();
+
 }
 
 double MSAclass::GetWeight(size_t i) const {
@@ -650,5 +660,46 @@ const std::string& MSAclass::GetSequence(size_t i) const {
 	assert(i >= 0 && i < a3m.size()); /* out of range */
 
 	return a3m[i].second;
+
+}
+
+void MSAclass::SetFreq() {
+
+	fi.clear();
+
+	double Beff = GetNeff();
+
+	/* pseudocount */
+	double lpseudo = 1.0 * Beff;
+
+	/* resize fi[ncol][NAA] and
+	 * initialize with pseudocounts */
+	fi.resize(ncol, std::vector<double>(NAA, lpseudo / NAA));
+
+	/* fill in fi[ncol][NAA] woth counts */
+	for (size_t i = 0; i < nrow; i++) {
+		const char *seqi = a3m[row_map[i]].second.c_str();
+		double w = weight[i];
+		for (size_t j = 0; j < ncol; j++) {
+			unsigned char a = aatoi(seqi[col_map[j]]);
+			fi[j][a] += w;
+		}
+	}
+
+	/* convert counts into frequencies */
+	for (size_t j = 0; j < ncol; j++) {
+		for (size_t a = 0; a < NAA; a++) {
+			fi[j][a] /= (Beff + lpseudo);
+		}
+	}
+
+}
+
+double MSAclass::GetFi(size_t i, unsigned char a) const {
+
+	assert(i >= 0 && i < ncol); /* residue index out of range */
+	assert(a >= 0 && a < NAA); /* aa identity out of range */
+
+	return fi[i][a];
 
 }
