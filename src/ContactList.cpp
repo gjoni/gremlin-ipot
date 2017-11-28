@@ -75,7 +75,7 @@ void ContactList::Print() const {
 	printf("\n");
 
 	/* printf features and terms */
-	char pattern[] = "%12.5f";
+	char pattern[] = "%12.5e";
 	for (auto &c : contact) {
 		printf("%10lu%10lu", c.i, c.j);
 		printf(pattern, c.score);
@@ -103,7 +103,7 @@ void ContactList::Print(const MSAclass &MSA) const {
 	printf("\n");
 
 	/* printf features and terms */
-	char pattern[] = "%12.5f";
+	char pattern[] = "%12.4e";
 	for (auto &c : contact) {
 		size_t i = MSA.GetA3MIdx(c.i);
 		size_t j = MSA.GetA3MIdx(c.j);
