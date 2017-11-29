@@ -94,25 +94,25 @@ void MRFprocessor::DI(const MRFclass &MRF, const MSAclass &MSA, double **mtx) {
 				}
 			}
 
-//			for (size_t a = 0; a < NAA - 1; a++) {
-//				for (size_t b = 0; b < NAA - 1; b++) {
-//					double pab = exp(eab[a][b]) / Zij;
-//					mtx[i][j] += pab * log(pab / Pi[i][a] / Pi[j][b]);
-//				}
-//				free(eab[a]);
-//			}
-//			free(eab);
-
 			for (size_t a = 0; a < NAA - 1; a++) {
-				double fa = MSA.GetFi(i, a);
 				for (size_t b = 0; b < NAA - 1; b++) {
 					double pab = exp(eab[a][b]) / Zij;
-					double fb = MSA.GetFi(j, b);
-					mtx[i][j] += pab * log(pab / fa / fb);
+					mtx[i][j] += pab * log(pab / Pi[i][a] / Pi[j][b]);
 				}
 				free(eab[a]);
 			}
 			free(eab);
+
+//			for (size_t a = 0; a < NAA - 1; a++) {
+//				double fa = MSA.GetFi(i, a);
+//				for (size_t b = 0; b < NAA - 1; b++) {
+//					double pab = exp(eab[a][b]) / Zij;
+//					double fb = MSA.GetFi(j, b);
+//					mtx[i][j] += pab * log(pab / fa / fb);
+//				}
+//				free(eab[a]);
+//			}
+//			free(eab);
 
 			mtx[j][i] = mtx[i][j];
 

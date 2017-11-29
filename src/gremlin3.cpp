@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
 	Contacts.AddFeature("RRCE", mtx);
 
-//	PairEnergiesDI(MSA, mtx);
-//	Contacts.AddFeature("DI(RRCE)", mtx);
+	PairEnergiesDI(MSA, mtx);
+	Contacts.AddFeature("DI(RRCE)", mtx);
 
 	/*
 	 * (3) read edge constraints
@@ -179,6 +179,8 @@ int main(int argc, char *argv[]) {
 		MRFprocessor::APC(MRF, mtx);
 		MRFprocessor::Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
+		MRFprocessor::DI(MRF, MSA, mtx);
+		Contacts.AddFeature("DI", mtx);
 		break;
 	default:
 		printf("!!! ACHTUNG !!! (this should never happen)\n");
@@ -398,31 +400,48 @@ double PairEnergiesDI(const MSAclass &MSA, double **mtx) {
 	unsigned char * msa = MSA.GetMsa();
 	MSAclass::aatoi(msa, nrow * ncol);
 
-	/* 2-site partition function
-	 * (the same for all positions) */
-//	double Neff = MSA.GetNeff();
-	double Zref = 0.0;
-	for (size_t a = 0; a < 20; a++) {
-		double ha = RRCE_.GetHi(a);
-		for (size_t b = 0; b < 20; b++) {
-			double hb = RRCE_.GetHi(b);
-			double Jab = RRCE_.GetJij(a, b);
-			Zref += exp(-Jab - ha - hb);
-		}
-	}
-	Zref *= MSA.GetNeff();
-
-	/* 2-site probabilities */
-	double ***Pij = (double***) malloc(ncol * sizeof(double**));
+	double Neff = MSA.GetNeff();
 
 	for (size_t i = 0; i < ncol; i++) {
 		memset(mtx[i], 0, ncol * sizeof(double));
-		Pij[i] = (double**) malloc(ncol * sizeof(double*));
-		for (size_t j = 0; j < ncol; j++) {
-			Pij[i][j] = (double*) calloc(400, sizeof(double));
+	}
+
+	/*
+	 * precompute 1-site probabilities
+	 */
+	double *Px = (double*) malloc(20 * sizeof(double));
+	double Z = 0.0;
+	for (int i = 0; i < 20; i++) {
+		Px[i] = exp(-RRCE_.GetHi(i));
+		Z += Px[i];
+	}
+	for (int i = 0; i < 20; i++) {
+		Px[i] /= Z;
+	}
+
+	/*
+	 * precomputed 2-site delta-log-likelihoods
+	 */
+	double **Pxy = (double**) malloc(20 * sizeof(double));
+	Z = 0.0;
+	for (int i = 0; i < 20; i++) {
+		Pxy[i] = (double*) malloc(20 * sizeof(double));
+		for (int j = 0; j < 20; j++) {
+			Pxy[i][j] = exp(
+					-RRCE_.GetHi(i) - RRCE_.GetHi(j) - RRCE_.GetJij(i, j));
+			Z += Pxy[i][j];
 		}
 	}
 
+	for (int i = 0; i < 20; i++) {
+		for (int j = 0; j < 20; j++) {
+			Pxy[i][j] /= Z;
+		}
+	}
+
+	/*
+	 * evaluate MSA
+	 */
 	for (size_t i = 0; i < nrow; i++) {
 
 		unsigned char *seq = msa + i * ncol;
@@ -434,8 +453,6 @@ double PairEnergiesDI(const MSAclass &MSA, double **mtx) {
 				continue;
 			}
 
-			double hp = RRCE_.GetHi(a);
-
 			for (size_t q = p + 1; q < ncol; q++) {
 
 				unsigned char b = seq[q];
@@ -443,30 +460,16 @@ double PairEnergiesDI(const MSAclass &MSA, double **mtx) {
 					continue;
 				}
 
-				double hq = RRCE_.GetHi(b);
-				double Jpq = RRCE_.GetJij(a, b);
-
-//				printf("%lu %lu %d %d %d\n", p, q, int(a), int(b),
-//						int(a * 20 + b));
-				Pij[p][q][a * 20 + b] += w * exp(-Jpq - hp - hq);
+				mtx[p][q] += w * Pxy[a][b] * log(Pxy[a][b] / Px[a] / Px[b]);
 
 			}
 		}
 	}
 
-	/*
-	 * Direct Information
-	 */
+	/* symmetrize */
 	for (size_t p = 0; p < ncol; p++) {
 		for (size_t q = p + 1; q < ncol; q++) {
-			for (int ab = 0; ab < 400; ab++) {
-				double fa = MSA.GetFi(p, ab % 20);
-				double fb = MSA.GetFi(p, ab / 20);
-				Pij[p][q][ab] /= Zref;
-				if (Pij[p][q][ab] > 1e-10) {
-					mtx[p][q] += Pij[p][q][ab] * log(Pij[p][q][ab] / fa / fb);
-				}
-			}
+			mtx[p][q] /= Neff;
 			mtx[q][p] = mtx[p][q];
 		}
 	}
@@ -474,13 +477,12 @@ double PairEnergiesDI(const MSAclass &MSA, double **mtx) {
 	/*
 	 * free
 	 */
-	for (size_t i = 0; i < ncol; i++) {
-		for (size_t j = 0; j < ncol; j++) {
-			free(Pij[i][j]);
-		}
-		free(Pij[i]);
+	free(msa);
+	for (int i = 0; i < 20; i++) {
+		free(Pxy[i]);
 	}
-	free(Pij);
+	free(Pxy);
+	free(Px);
 
 	return DI;
 

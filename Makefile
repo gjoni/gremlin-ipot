@@ -1,6 +1,6 @@
 
 CXX=g++
-CXXFLAGS += -Wall -Wno-unused-result -pedantic -Ofast -march=native -std=c++0x -fopenmp -g -ggdb
+CXXFLAGS += -Wall -Wno-unused-result -pedantic -Ofast -march=native -std=c++0x -g -ggdb
 CXXLIBS = -lgsl -lgslcblas
 INCDIRS = -I./src
 LIBDIRS =
