@@ -5,6 +5,8 @@
  *      Author: ivan
  */
 
+#include <cmath>
+
 #include "ContactList.h"
 
 ContactList::ContactList(size_t _dim) :
@@ -192,6 +194,43 @@ void ContactList::SaveMTX(const char *name, const MSAclass &MSA) const {
 
 }
 
+void ContactList::RescoreLogistic(const LogRegCoeff &coef) {
+
+	for (auto &c : contact) {
+
+		/* intercept */
+		double s = coef.w0;
+
+		std::vector<double> feature(c.feature);
+
+		for (size_t i = 0; i < term.size(); i++) {
+			feature.push_back(term[i].second);
+		}
+
+//		size_t N = feature.size();
+		size_t N = coef.wlin.size();
+
+//		printf("%lu %lu %lu\n", c.feature.size(), feature.size(), term.size());
+
+		for (size_t i = 0; i < N; i++) {
+
+			/* contribution from linear terms */
+			s += feature[i] * coef.wlin[i];
+
+			for (size_t j = i; j < N; j++) {
+
+				/* contribution from quadratic terms */
+				s += feature[i] * feature[j] * coef.wquad[i][j];
+
+			}
+		}
+
+		/* update total score */
+		c.score = 1.0 / (1.0 + exp(-s));
+
+	}
+}
+
 EDGE_LIST ReadEdges(const char *name) {
 
 	EDGE_LIST L;
@@ -213,3 +252,4 @@ EDGE_LIST ReadEdges(const char *name) {
 	return L;
 
 }
+

@@ -36,6 +36,22 @@ struct Contact {
 };
 
 /*
+ * logistic regression coefficients
+ */
+struct LogRegCoeff {
+
+	/* intercept */
+	double w0;
+
+	/* linear terms */
+	std::vector<double> wlin;
+
+	/* quadratic terms */
+	std::vector<std::vector<double> > wquad;
+
+};
+
+/*
  * compare Contacts based on the total score
  */
 //bool operator <(const Contact &a, const Contact &b) {
@@ -95,9 +111,13 @@ public:
 	void AddFeature(const std::string &name, double **mtx);
 
 	/*
+	 * rescoring
+	 */
+	void RescoreLogistic(const LogRegCoeff &C);
+
+	/*
 	 * output
 	 */
-
 	void Print() const;
 	void Print(const MSAclass &MSA) const;
 

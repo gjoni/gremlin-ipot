@@ -42,6 +42,32 @@ double MRFprocessor::FNorm(const double *mat, size_t dim) {
 
 }
 
+void MRFprocessor::CH(const MRFclass &MRF, double **mtx) {
+
+	size_t dim = MRF.GetDim();
+//	size_t NAA = MSAclass::NAA;
+
+	/* initialize mtx with zeroes */
+	for (size_t i = 0; i < dim; i++) {
+		memset(mtx[i], 0, dim * sizeof(double));
+	}
+
+	/* dot products (correlations) of local fields */
+	for (size_t i = 0; i < dim; i++) {
+		double *hi = MRF.h + i * MSAclass::NAA;
+		for (size_t j = i + 1; j < dim; j++) {
+			double *hj = MRF.h + j * MSAclass::NAA;
+			double s = 0.0;
+			for (size_t a = 0; a < MSAclass::NAA; a++) {
+				s += hi[a] * hj[a];
+			}
+			mtx[i][j] = s;
+			mtx[j][i] = s;
+		}
+	}
+
+}
+
 void MRFprocessor::DI(const MRFclass &MRF, const MSAclass &MSA, double **mtx) {
 
 	assert(MRF.GetDim() == MSA.GetNcol()); /* MRF/MSA size mismatch */

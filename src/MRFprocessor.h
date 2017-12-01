@@ -32,6 +32,7 @@ public:
 		size_t dim;
 	};
 
+	static void CH(const MRFclass &MRF, double **mtx);
 	static void DI(const MRFclass &MRF, const MSAclass &MSA, double **mtx);
 	static void FN(const MRFclass &MRF, double **mtx);
 	static void APC(const MRFclass &MRF, double **mtx);

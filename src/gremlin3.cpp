@@ -33,6 +33,41 @@
  *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
  */
 
+/*
+ * training set:      1,972 proteins from the Exceptions set
+ * distance cut-off:  8A
+ * minimal Neff:      10
+ * datapoints used:   every 1, every 5, every 5
+ * slogreg param A:   -9
+ */
+
+// Length (0:150)
+const LogRegCoeff coef_range1 = { -1.67473, { 1.17148, -0.54004, -4.6156,
+		-1.24735, 0.87817, 0.09511 }, { { 0.00000, 0.04282, 2.11214, 0.23992,
+		0.07935, -0.27628 }, { 0.04282, 0.00000, -1.43714, -0.00709, 0.02930,
+		0.00367 }, { 2.11214, -1.43714, 0.00000, -0.16130, 0.32952, 0.56220 }, {
+		0.23992, -0.00709, -0.16130, 0.00000, 0.24220, 0.08363 }, { 0.07935,
+		0.02930, 0.32952, 0.24220, 0.00000, -0.17670 }, { -0.27628, 0.00367,
+		0.56220, 0.08363, -0.17670, 0.00000 } } };
+
+// Length [150:300)
+const LogRegCoeff coef_range2 = { 2.52312, { -0.87493, -0.6806, -2.8686,
+		-1.38143, 0.41752, -0.78191 }, { { 0.00000, 0.11966, 2.18651, 0.19529,
+		0.05010, 0.14904 }, { 0.11966, 0.00000, -1.43999, 0.02014, 0.03217,
+		0.01518 }, { 2.18651, -1.43999, 0.00000, -0.21606, 0.34207, 0.22288 }, {
+		0.19529, 0.02014, -0.21606, 0.00000, 0.26241, 0.07216 }, { 0.05010,
+		0.03217, 0.34207, 0.26241, 0.00000, -0.07533 }, { 0.14904, 0.01518,
+		0.22288, 0.07216, -0.07533, 0.00000 } } };
+
+// Length [300:inf)
+const LogRegCoeff coef_range3 = { 1.74862, { -0.94721, -0.801, -2.08548,
+		-0.75452, 0.46976, -0.59321 }, { { 0.00000, 0.19966, 2.06230, 0.10662,
+		0.02228, 0.15400 }, { 0.19966, 0.00000, -1.44987, 0.02691, 0.04843,
+		0.01527 }, { 2.06230, -1.44987, 0.00000, -0.19650, 0.36617, 0.06135 }, {
+		0.10662, 0.02691, -0.19650, 0.00000, 0.23712, -0.00996 }, { 0.02228,
+		0.04843, 0.36617, 0.23712, 0.00000, -0.09214 }, { 0.15400, 0.01527,
+		0.06135, -0.00996, -0.09214, 0.00000 } } };
+
 struct OPTS {
 	char *a3m; /* A3M file */
 	char *mtx; /* file with the computed contact matrix */
@@ -97,9 +132,6 @@ int main(int argc, char *argv[]) {
 	/* statistical potential */
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
 	Contacts.AddFeature("RRCE", mtx);
-
-	PairEnergiesDI(MSA, mtx);
-	Contacts.AddFeature("DI(RRCE)", mtx);
 
 	/*
 	 * (3) read edge constraints
@@ -171,16 +203,24 @@ int main(int argc, char *argv[]) {
 		printf("# Contact matrix correction: APC\n");
 		MRFprocessor::APC(MRF, mtx);
 		Contacts.AddFeature("APC", mtx);
-		MRFprocessor::DI(MRF, MSA, mtx);
-		Contacts.AddFeature("DI", mtx);
 		break;
 	case 3:
 		printf("# Contact matrix correction: PROB\n");
 		MRFprocessor::APC(MRF, mtx);
 		MRFprocessor::Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
-		MRFprocessor::DI(MRF, MSA, mtx);
-		Contacts.AddFeature("DI", mtx);
+		if (ncol < 150) {
+			printf("# Coefficients set: 1\n");
+			Contacts.RescoreLogistic(coef_range1);
+		} else if (ncol >= 150 && ncol < 300) {
+			printf("# Coefficients set: 2\n");
+			Contacts.RescoreLogistic(coef_range2);
+		} else {
+			printf("# Coefficients set: 3\n");
+			Contacts.RescoreLogistic(coef_range3);
+		}
+		MRFprocessor::CH(MRF, mtx);
+		Contacts.AddFeature("Cor(h)", mtx);
 		break;
 	default:
 		printf("!!! ACHTUNG !!! (this should never happen)\n");
