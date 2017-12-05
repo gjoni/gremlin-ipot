@@ -16,6 +16,7 @@
 #include "MRFprocessor.h"
 #include "ContactList.h"
 #include "RRCE.h"
+#include "LogRegCoeff.h"
 
 /* TODO: separate programs
  * 1) gremlin3 - produces an MRF
@@ -31,14 +32,6 @@
  *   - GREMLIN2 symmetric minimizer
  *   - don't store masked edges (simplified problem with less variables)
  *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
- */
-
-/*
- * training set:      1,972 proteins from the Exceptions set
- * distance cut-off:  8A
- * minimal Neff:      10
- * datapoints used:   every 1, every 5, every 5
- * slogreg param A:   -9
  */
 
 // Length (0:150)
@@ -67,7 +60,6 @@ const LogRegCoeff coef_range3 = { 1.74862, { -0.94721, -0.801, -2.08548,
 		0.10662, 0.02691, -0.19650, 0.00000, 0.23712, -0.00996 }, { 0.02228,
 		0.04843, 0.36617, 0.23712, 0.00000, -0.09214 }, { 0.15400, 0.01527,
 		0.06135, -0.00996, -0.09214, 0.00000 } } };
-
 struct OPTS {
 	char *a3m; /* A3M file */
 	char *mtx; /* file with the computed contact matrix */
@@ -93,7 +85,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, NULL, NULL, 2, 0.2, 0.2 };
+	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 2, 0.2, 0.2 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -205,22 +197,60 @@ int main(int argc, char *argv[]) {
 		Contacts.AddFeature("APC", mtx);
 		break;
 	case 3:
-		printf("# Contact matrix correction: PROB\n");
+		printf("# Contact matrix correction: PROB5\n");
 		MRFprocessor::APC(MRF, mtx);
 		MRFprocessor::Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
-		if (ncol < 150) {
-			printf("# Coefficients set: 1\n");
-			Contacts.RescoreLogistic(coef_range1);
-		} else if (ncol >= 150 && ncol < 300) {
-			printf("# Coefficients set: 2\n");
-			Contacts.RescoreLogistic(coef_range2);
+		if (ncol < 100) {
+			printf("#          Coefficients set: 0..100\n");
+			Contacts.RescoreLogistic(coef5A_range1);
+		} else if (ncol >= 100 && ncol < 150) {
+			printf("#          Coefficients set: 100..150\n");
+			Contacts.RescoreLogistic(coef5A_range2);
+		} else if (ncol >= 150 && ncol < 200) {
+			printf("#          Coefficients set: 150..200\n");
+			Contacts.RescoreLogistic(coef5A_range3);
+		} else if (ncol >= 200 && ncol < 250) {
+			printf("#          Coefficients set: 200..250\n");
+			Contacts.RescoreLogistic(coef5A_range4);
+		} else if (ncol >= 250 && ncol < 300) {
+			printf("#          Coefficients set: 250..300\n");
+			Contacts.RescoreLogistic(coef5A_range5);
+		} else if (ncol >= 300 && ncol < 400) {
+			printf("#          Coefficients set: 300..400\n");
+			Contacts.RescoreLogistic(coef5A_range6);
 		} else {
-			printf("# Coefficients set: 3\n");
-			Contacts.RescoreLogistic(coef_range3);
+			printf("#          Coefficients set: 400..inf\n");
+			Contacts.RescoreLogistic(coef5A_range7);
 		}
-		MRFprocessor::CH(MRF, mtx);
-		Contacts.AddFeature("Cor(h)", mtx);
+		break;
+	case 4:
+		printf("# Contact matrix correction: PROB8\n");
+		MRFprocessor::APC(MRF, mtx);
+		MRFprocessor::Zscore(ncol, mtx);
+		Contacts.AddFeature("Z(APC)", mtx);
+		if (ncol < 100) {
+			printf("#          Coefficients set: 0..100\n");
+			Contacts.RescoreLogistic(coef8A_range1);
+		} else if (ncol >= 100 && ncol < 150) {
+			printf("#          Coefficients set: 100..150\n");
+			Contacts.RescoreLogistic(coef8A_range2);
+		} else if (ncol >= 150 && ncol < 200) {
+			printf("#          Coefficients set: 150..200\n");
+			Contacts.RescoreLogistic(coef8A_range3);
+		} else if (ncol >= 200 && ncol < 250) {
+			printf("#          Coefficients set: 200..250\n");
+			Contacts.RescoreLogistic(coef8A_range4);
+		} else if (ncol >= 250 && ncol < 300) {
+			printf("#          Coefficients set: 250..300\n");
+			Contacts.RescoreLogistic(coef8A_range5);
+		} else if (ncol >= 300 && ncol < 400) {
+			printf("#          Coefficients set: 300..400\n");
+			Contacts.RescoreLogistic(coef8A_range6);
+		} else {
+			printf("#          Coefficients set: 400..inf\n");
+			Contacts.RescoreLogistic(coef8A_range7);
+		}
 		break;
 	default:
 		printf("!!! ACHTUNG !!! (this should never happen)\n");
@@ -315,8 +345,10 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				opts.rmode = 1;
 			} else if (strcmp(optarg, "APC") == 0) {
 				opts.rmode = 2;
-			} else if (strcmp(optarg, "PROB") == 0) {
+			} else if (strcmp(optarg, "PROB5") == 0) {
 				opts.rmode = 3;
+			} else if (strcmp(optarg, "PROB8") == 0) {
+				opts.rmode = 4;
 			} else if (strcmp(optarg, "ZILCH") == 0) {
 				opts.rmode = 0;
 			} else {
@@ -365,7 +397,8 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -m list1.txt - residue pairs to be masked\n");
 	printf("          -u list2.txt - residue pairs to be unmasked "
 			"(all others are masked)\n");
-	printf("          -R contact matrix correction {FN,APC,PROB} (APC)\n");
+	printf(
+			"          -R contact matrix correction {FN,APC,PROB5,PROB8} (APC)\n");
 	printf("          -p lpair\n");
 	printf("          -s lskew\n");
 
