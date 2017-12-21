@@ -473,15 +473,18 @@ void MSAclass::Hx(double *hx) const {
 	/*
 	 * (1) collect aa counts for every sequence position
 	 */
+	double Beff = 0.0;
 	for (size_t i = 0; i < nrow; i++) {
 		size_t row = row_map[i];
+		double w = weight[i];
 		for (size_t j = 0; j < ncol; j++) {
 			size_t col = col_map[j];
 			unsigned char c = aatoi(a3m[row].second[col]);
 			if (c >= 0 && c < NAA) {
-				px[j][c] += 1.0;
+				px[j][c] += w;
 			}
 		}
+		Beff += w;
 	}
 
 	/*
@@ -489,8 +492,8 @@ void MSAclass::Hx(double *hx) const {
 	 */
 	for (size_t i = 0; i < ncol; i++) {
 		for (size_t c = 0; c < NAA; c++) {
-			px[i][c] /= nrow;
-			if (px[i][c] > 1e-10) {
+			if (px[i][c] > 0.0) {
+				px[i][c] /= Beff;
 				hx[i] -= px[i][c] * log(px[i][c]);
 			}
 		}
@@ -503,6 +506,107 @@ void MSAclass::Hx(double *hx) const {
 		free(px[i]);
 	}
 	free(px);
+
+}
+
+void MSAclass::HxHy(double **hxhy) const {
+
+	for (size_t i = 0; i < ncol; i++) {
+		memset(hxhy[i], 0, ncol * sizeof(double));
+	}
+
+	double *hx = (double*) malloc(ncol * sizeof(double));
+
+	Hx(hx);
+
+	for (size_t i = 0; i < ncol; i++) {
+		for (size_t j = i + 1; j < ncol; j++) {
+			hxhy[i][j] = hx[i] + hx[j];
+			hxhy[j][i] = hxhy[i][j];
+		}
+	}
+
+	free(hx);
+
+}
+
+void MSAclass::GxGy(double **gxgy) {
+
+	for (size_t i = 0; i < ncol; i++) {
+		memset(gxgy[i], 0, ncol * sizeof(double));
+	}
+
+	double *gx = (double*) calloc(ncol, sizeof(double));
+
+	/*
+	 * (1) collect gap counts for every sequence position
+	 */
+	double Beff = 0.0;
+	for (size_t i = 0; i < nrow; i++) {
+		size_t row = row_map[i];
+		double w = weight[i];
+		for (size_t j = 0; j < ncol; j++) {
+			size_t col = col_map[j];
+			char c = a3m[row].second[col];
+			if (c == '-') {
+				gx[j] += w;
+			}
+		}
+		Beff += w;
+	}
+
+	/*
+	 * (2) convert counts into frequencies
+	 */
+	for (size_t j = 0; j < ncol; j++) {
+		gx[j] /= Beff;
+	}
+
+	/*
+	 * (3) 
+	 */
+	for (size_t i = 0; i < ncol; i++) {
+		double ei = gx[i] > 0 ? log(gx[i]) : 0.0;
+		for (size_t j = i + 1; j < ncol; j++) {
+			double ej = gx[j] > 0 ? log(gx[j]) : 0.0;
+			gxgy[i][j] = ei + ej;
+			gxgy[j][i] = gxgy[i][j];
+		}
+	}
+
+}
+
+void MSAclass::Gxy(double **gxy) {
+
+	for (size_t i = 0; i < ncol; i++) {
+		memset(gxy[i], 0, ncol * sizeof(double));
+	}
+
+	double Beff = 0.0;
+	for (size_t i = 0; i < nrow; i++) {
+
+		size_t row = row_map[i];
+		double w = weight[i];
+
+		for (size_t p = 0; p < ncol; p++) {
+
+			char cp = a3m[row].second[col_map[p]];
+			for (size_t q = p + 1; q < ncol; q++) {
+				char cq = a3m[row].second[col_map[q]];
+				if (cp == '-' && cq == '-') {
+					gxy[p][q] += w;
+				}
+			}
+		}
+		Beff += w;
+	}
+
+	for (size_t p = 0; p < ncol; p++) {
+		for (size_t q = p + 1; q < ncol; q++) {
+			gxy[p][q] = gxy[p][q] > 0.0 ? log(gxy[p][q] / Beff) : 0.0;
+			gxy[q][p] = gxy[p][q];
+		}
+	}
 
 }
 
@@ -521,19 +625,22 @@ void MSAclass::Hxy(double **hxy) const {
 			double *pxy = (double*) calloc(NAA * NAA, sizeof(double));
 
 			/* loop over all sequences */
+			double Beff = 0.0;
 			for (size_t k = 0; k < nrow; k++) {
+				double w = weight[k];
 				const std::string &seq = a3m[row_map[k]].second;
 				unsigned char a = aatoi(seq[col_map[i]]);
 				unsigned char b = aatoi(seq[col_map[j]]);
 				if (a >= 0 && a < NAA && b >= 0 && b < NAA) {
-					pxy[a * NAA + b] += 1.0;
+					pxy[a * NAA + b] += w;
 				}
+				Beff += w;
 			}
 
 			/* convert counts into entropies */
 			for (size_t ab = 0; ab < NAA * NAA; ab++) {
-				pxy[ab] /= nrow;
-				if (pxy[ab] > 1e-10) {
+				if (pxy[ab] > 0.0) {
+					pxy[ab] /= Beff;
 					hxy[i][j] -= pxy[ab] * log(pxy[ab]);
 				}
 			}

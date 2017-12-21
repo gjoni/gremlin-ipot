@@ -18,48 +18,6 @@
 #include "RRCE.h"
 #include "LogRegCoeff.h"
 
-/* TODO: separate programs
- * 1) gremlin3 - produces an MRF
- *    1a. gremlin3c - for complexes: block-APC
- * 2) score_patchdock
- * 3) score_gramm
- * 4) score_decoy */
-
-/* TODO:
- *   + TEST - convert 'shift' into cleaned MSA numbering
- *   + TEST - add block-APC (BAPC) correction & parameter '-b'
- *   + TEST - output per group scores (for constrained problem only)
- *   - GREMLIN2 symmetric minimizer
- *   - don't store masked edges (simplified problem with less variables)
- *   - GREMLIN1 routine with L1 penalty (ADMM solver needed)
- */
-
-// Length (0:150)
-const LogRegCoeff coef_range1 = { -1.67473, { 1.17148, -0.54004, -4.6156,
-		-1.24735, 0.87817, 0.09511 }, { { 0.00000, 0.04282, 2.11214, 0.23992,
-		0.07935, -0.27628 }, { 0.04282, 0.00000, -1.43714, -0.00709, 0.02930,
-		0.00367 }, { 2.11214, -1.43714, 0.00000, -0.16130, 0.32952, 0.56220 }, {
-		0.23992, -0.00709, -0.16130, 0.00000, 0.24220, 0.08363 }, { 0.07935,
-		0.02930, 0.32952, 0.24220, 0.00000, -0.17670 }, { -0.27628, 0.00367,
-		0.56220, 0.08363, -0.17670, 0.00000 } } };
-
-// Length [150:300)
-const LogRegCoeff coef_range2 = { 2.52312, { -0.87493, -0.6806, -2.8686,
-		-1.38143, 0.41752, -0.78191 }, { { 0.00000, 0.11966, 2.18651, 0.19529,
-		0.05010, 0.14904 }, { 0.11966, 0.00000, -1.43999, 0.02014, 0.03217,
-		0.01518 }, { 2.18651, -1.43999, 0.00000, -0.21606, 0.34207, 0.22288 }, {
-		0.19529, 0.02014, -0.21606, 0.00000, 0.26241, 0.07216 }, { 0.05010,
-		0.03217, 0.34207, 0.26241, 0.00000, -0.07533 }, { 0.14904, 0.01518,
-		0.22288, 0.07216, -0.07533, 0.00000 } } };
-
-// Length [300:inf)
-const LogRegCoeff coef_range3 = { 1.74862, { -0.94721, -0.801, -2.08548,
-		-0.75452, 0.46976, -0.59321 }, { { 0.00000, 0.19966, 2.06230, 0.10662,
-		0.02228, 0.15400 }, { 0.19966, 0.00000, -1.44987, 0.02691, 0.04843,
-		0.01527 }, { 2.06230, -1.44987, 0.00000, -0.19650, 0.36617, 0.06135 }, {
-		0.10662, 0.02691, -0.19650, 0.00000, 0.23712, -0.00996 }, { 0.02228,
-		0.04843, 0.36617, 0.23712, 0.00000, -0.09214 }, { 0.15400, 0.01527,
-		0.06135, -0.00996, -0.09214, 0.00000 } } };
 struct OPTS {
 	char *a3m; /* A3M file */
 	char *mtx; /* file with the computed contact matrix */
@@ -118,8 +76,15 @@ int main(int argc, char *argv[]) {
 	Contacts.AddFeature("MI", mtx);
 
 	/* joint entropy */
-	MSA.Hxy(mtx);
-	Contacts.AddFeature("Hxy", mtx);
+	MSA.HxHy(mtx);
+	Contacts.AddFeature("HxHy", mtx);
+
+	/* gaps */
+	MSA.Gxy(mtx);
+	Contacts.AddFeature("Gxy", mtx);
+
+	MSA.GxGy(mtx);
+	Contacts.AddFeature("GxGy", mtx);
 
 	/* statistical potential */
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
@@ -142,15 +107,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	/*
-	 ProblemPNAS P(MSA, 2);
-	 ProblemRRCE P(MSA, 7);
-	 */
-
 	ProblemFull P(MSA);
-
-//	ProblemFullAsym P(MSA);
-//	P.SetL2(opts.lpair, opts.lskew);
 
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
@@ -264,23 +221,6 @@ int main(int argc, char *argv[]) {
 		Contacts.SaveMTX(opts.mtx, MSA);
 	}
 
-	/*
-	 * (7) calculate per group scores
-	 */
-//	if (opts.umask != NULL) {
-//		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-//			std::vector<std::pair<size_t, size_t> > vec = MSA.CastToMsa(
-//					it->second);
-//			double score = MRFprocessor::GetScore(result, vec);
-//			double energy = MRF.GetPairEnergies(MSA, vec);
-//			printf("# Score(%s)= %.6e, Energy(%s)= %.6e\n", it->first.c_str(),
-//					score, it->first.c_str(), energy);
-//		}
-//	}
-//	}
-	/*
-	 *
-	 */
 	Contacts.Print(MSA);
 
 	/*

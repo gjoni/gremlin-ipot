@@ -124,6 +124,10 @@ public:
 	void Hx(double *hx) const;
 	void Hxy(double **hxy) const;
 	void MI(double **mi) const;
+	void HxHy(double **hxhy) const; // H(x) + H(y)
+
+	void GxGy(double **gxgy); // Gap(x) + Gap(y)
+	void Gxy(double **gxy); // Gap(x && y);
 
 	double GetFi(size_t i, unsigned char a) const;
 
