@@ -77,14 +77,14 @@ int main(int argc, char *argv[]) {
 
 	/* joint entropy */
 	MSA.HxHy(mtx);
-	Contacts.AddFeature("HxHy", mtx);
+	Contacts.AddFeature("Hx+Hy", mtx);
 
 	/* gaps */
-	MSA.Gxy(mtx);
-	Contacts.AddFeature("Gxy", mtx);
-
-	MSA.GxGy(mtx);
-	Contacts.AddFeature("GxGy", mtx);
+//	MSA.Gxy(mtx);
+//	Contacts.AddFeature("Gxy", mtx);
+//
+//	MSA.GxGy(mtx);
+//	Contacts.AddFeature("Gx+Gy", mtx);
 
 	/* statistical potential */
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
