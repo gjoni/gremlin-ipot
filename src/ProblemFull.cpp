@@ -216,7 +216,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 	double *gaux = (double*) calloc(dim2body, sizeof(double));
 
 	/* loop over all sequences in the MSA */
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (size_t i = 0; i < nrow; i++) {
 
 		double weight = MSA->weight[i];
@@ -279,7 +279,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 
 		/* compute f and derivatives of h[] */
-#pragma omp critical
+//#pragma omp critical
 		for (size_t k = 0; k < ncol; k++) {
 
 			unsigned char xik = seq[k];
@@ -297,7 +297,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 
 		/* derivatives of J[][] */
-#pragma omp critical
+//#pragma omp critical
 		for (size_t k = 0; k < ncol; k++) {
 
 			double *gaux_p = gaux + (seq[k] * ncol + k) * NAA * ncol;
@@ -334,7 +334,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
-#pragma omp parallel for ordered
+//#pragma omp parallel for ordered
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {
@@ -376,14 +376,14 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 	double reg = 0.0;
 
 	/* regularize h */
-#pragma omp parallel for ordered reduction (+:reg)
+//#pragma omp parallel for ordered reduction (+:reg)
 	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 		g[v] += 2.0 * lsingle * x[v];
 	}
 
 	/* regularize J */
-#pragma omp parallel for ordered reduction (+:reg)
+//#pragma omp parallel for ordered reduction (+:reg)
 	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 		g[v] += 2.0 * lpair * x[v];

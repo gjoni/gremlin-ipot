@@ -13,9 +13,6 @@
 #include <tuple>
 #include <string>
 
-/* neighbors list type: element -> (neighbor; contact_score) */
-//typedef std::vector<std::pair<unsigned, double> > NListT;
-
 /* neighbors list type: element -> (neighbor; contact_score; separation) */
 typedef std::vector<std::tuple<unsigned, double, unsigned> > NListT;
 
@@ -28,6 +25,9 @@ typedef std::vector<NListT> AListT;
 class CMap {
 private:
 
+	/* sequence */
+	std::string seq;
+
 	/* dimension (aka sequence length) */
 	unsigned size;
 
@@ -39,30 +39,25 @@ private:
 	 * left/right neighbor lists */
 	std::vector<unsigned> mleft, mright;
 
-	/* contact map (2D array in 1D) */
-	/* TODO: don't really need this vector */
-//	std::vector<double> mtx1d;
-
 public:
+
+	/* from file & sequence */
+	CMap(const std::string&, const std::string&);
+
+	/* from adjacency list */
+	CMap(const AListT&, const std::string&);
 
 	CMap();
 
-	/* from file */
-	CMap(const char*);
-	CMap(const std::string&);
-
-	/* from adjacency list */
-	CMap(const AListT&);
-
-	/* from Chain */
-//	CMap(const Chain&);
-
 	~CMap();
 
-	double & operator()(unsigned i, unsigned j);
+	CMap & operator=(const CMap &source);
 
-	const NListT& GetLeftList(unsigned i);
-	const NListT& GetRightList(unsigned i);
+//	const NListT& GetLeftList(unsigned i);
+//	const NListT& GetRightList(unsigned i);
+
+//	const std::vector<unsigned>& GetLeftMap();
+//	const std::vector<unsigned>& GetRightMap();
 
 };
 
