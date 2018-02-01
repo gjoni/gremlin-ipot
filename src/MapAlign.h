@@ -12,6 +12,8 @@
 
 #include "CMap.h"
 
+using namespace std;
+
 class MapAlign {
 private:
 
@@ -23,27 +25,51 @@ private:
 		double **mtx; /* contacts scoring matrix (M x N) */
 		double **sco; /* DP scoring matrix (M + 1) x (N + 1) */
 		char **label; /* path in the DP matrix (M + 1) x (N + 1) */
-		std::vector<double>& gap_a; /* gap opening penalties for A */
-		std::vector<double>& gap_b; /* gap opening penalties for B */
+		std::vector<double> gap_a; /* gap opening penalties for A */
+		std::vector<double> gap_b; /* gap opening penalties for B */
+		std::vector<int> a2b;
+		std::vector<int> b2a;
 	};
 
 	static void Alloc(SWDATA*);
 	static void Free(SWDATA*);
 
-	/* Smith-Waterman alignment to calculate score only */
-	static double SWsimple(const NListT&, const NListT&);
+	static double gaussian(double mean, double std, double x);
+	static double sepw(double sep);
 
-	/* Smith-Waterman alignment */
-	static double SW(SWDATA&, CMap&, CMap&, double gap_e,
-			std::vector<double>& a2b);
+	/* step1 Smith-Waterman alignment to calculate score only */
+	static double SW1(const NListT&, const NListT&, double, double);
 
-	static void InitMTX(SWDATA&, CMap&, CMap&, double sep_x, double sep_y);
-	static void UpdateMTX(SWDATA&, CMap&, CMap&, int it);
+	/* step2 Smith-Waterman alignment */
+	static double SW2(SWDATA&, double gap_e, std::vector<int>& a2b);
+
+	/* TODO: current implementation is not very efficient */
+	static double Intersect(const NListT&, const NListT&,
+			const std::vector<int>&);
+
+	/* a function to assess current alignment
+	 * based on contact/gap scores - returned as a vector */
+	static std::vector<double> Assess(const CMap&, const CMap&,
+			const std::vector<int>&, double);
+
+	static void InitMTX(SWDATA&, const CMap&, const CMap&, double sep_x,
+			double sep_y);
+
+	static void UpdateMTX(SWDATA&, const CMap&, const CMap&, double, int iter,
+			std::vector<int>&);
+
 	static void CheckMTX();
 
 public:
 
-	static double Align(const CMap&, const CMap&, std::vector<unsigned>&);
+	struct PARAMS {
+		double gap_open;
+		double gap_ext;
+		int kmin;
+		int iter;
+	};
+
+	static double Align(const CMap&, const CMap&, PARAMS&, std::vector<int>&);
 
 };
 

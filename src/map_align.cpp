@@ -11,6 +11,7 @@
 #include "CMap.h"
 #include "MSAclass.h"
 #include "Chain.h"
+#include "MapAlign.h"
 
 #define DMAX 5.0
 #define KMIN 3
@@ -47,11 +48,20 @@ int main(int argc, char *argv[]) {
 		seqA = msa.GetSequence(0);
 	}
 	CMap mapA(opts.con, seqA);
+//	mapA.Print();
 
 	/*
 	 * (2) create contact map object from PDB
 	 */
 	CMap mapB = MapFromPDB(opts.pdb);
+//	mapB.Print();
+
+	/*
+	 * (3) align two maps
+	 */
+	std::vector<int> a2b(mapA.Size(), -1);
+	MapAlign::PARAMS params = { -1.0, -0.01, 3, 20 };
+	MapAlign::Align(mapA, mapB, params, a2b);
 
 	return 0;
 
@@ -121,7 +131,6 @@ CMap MapFromPDB(const std::string& name) {
 	for (int i = 0; i < C.nRes; i++) {
 		seq[i] = MSAclass::itoaa(C.residue[i].type);
 	}
-	printf("%s\n", seq.c_str());
 
 	/* temp. adjacency matrix */
 	double **mtx = (double**) malloc(C.nRes * sizeof(double*));
@@ -161,7 +170,9 @@ CMap MapFromPDB(const std::string& name) {
 			if (sep < KMIN) {
 				continue;
 			}
-			adj[i].push_back( { j, 1.0, sep });
+			if (mtx[i][j] > 1.0e-10) {
+				adj[i].push_back( { j, 1.0, sep });
+			}
 		}
 	}
 	CMap map(adj, seq);

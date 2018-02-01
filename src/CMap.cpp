@@ -21,13 +21,17 @@ CMap::~CMap() {
 }
 
 CMap & CMap::operator=(const CMap &source) {
+
 	seq = source.seq;
 	size = source.size;
 	left = source.left;
 	right = source.right;
 	mleft = source.mleft;
 	mright = source.mright;
+	edges = source.edges;
+
 	return *this;
+
 }
 
 CMap::CMap(const std::string& name, const std::string& sequence) :
@@ -62,7 +66,7 @@ CMap::CMap(const std::string& name, const std::string& sequence) :
 			assert(p >= 0.0 && p <= 1.0); /* probability out of range */
 
 			/* assume numbering in the input file
-			 * starts with 1 */
+			 * starts with 1 -- shift to zero */
 			a--;
 			b--;
 
@@ -72,7 +76,7 @@ CMap::CMap(const std::string& name, const std::string& sequence) :
 		}
 	}
 
-	/* fill in adjacency lists */
+	/* fill in adjacency lists & edge list */
 	for (unsigned i = 0; i < size; i++) {
 
 		/* left */
@@ -86,6 +90,7 @@ CMap::CMap(const std::string& name, const std::string& sequence) :
 		for (unsigned j = i + 1; j < size; j++) {
 			if (mtx[i][j] > 1.0e-6) {
 				right[i].push_back( { j, mtx[i][j], j - i });
+				edges[ {i,j}] = {mtx[i][j], i - j};
 			}
 		}
 
@@ -118,6 +123,7 @@ CMap::CMap(const AListT& adj, const std::string& sequence) :
 				left[i].push_back(n);
 			} else if (j > i) {
 				right[i].push_back(n);
+				edges[ {i, j}] = {std::get<1>(n), std::get<2>(n)};
 			}
 		}
 
@@ -130,5 +136,61 @@ CMap::CMap(const AListT& adj, const std::string& sequence) :
 		}
 
 	}
+
+}
+
+unsigned CMap::Size() const {
+
+	return size;
+
+}
+
+const std::vector<unsigned>& CMap::GetLeftMap() const {
+
+	return mleft;
+
+}
+
+const std::vector<unsigned>& CMap::GetRightMap() const {
+
+	return mright;
+
+}
+
+const NListT& CMap::GetLeftList(unsigned i) const {
+
+	return left[i];
+
+}
+
+const NListT& CMap::GetRightList(unsigned i) const {
+
+	return right[i];
+
+}
+
+void CMap::Print() const {
+
+	printf("LEN %lu\n", seq.length());
+	for (auto &e : edges) {
+		printf("CON %u %u %f\n", e.first.first, e.first.second, e.second.first);
+	}
+
+	/*
+	 printf("%s\n", seq.c_str());
+
+	 for (unsigned i = 0; i < size; i++) {
+	 printf("%d:", i);
+	 for (auto &c : left[i]) {
+	 printf(" L(%u,%.3f,%u)", std::get<0>(c), std::get<1>(c),
+	 std::get<2>(c));
+	 }
+	 for (auto &c : right[i]) {
+	 printf(" R(%u,%.3f,%u)", std::get<0>(c), std::get<1>(c),
+	 std::get<2>(c));
+	 }
+	 printf("\n");
+	 }
+	 */
 
 }
