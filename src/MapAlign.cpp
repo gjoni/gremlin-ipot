@@ -7,7 +7,7 @@
 
 #include <cstring>
 #include <cmath>
-#include <unordered_map>
+#include <algorithm>
 
 #include "MapAlign.h"
 
@@ -47,6 +47,7 @@ void MapAlign::Free(SWDATA* swdata) {
 		free(swdata->sco[i]);
 		free(swdata->label[i]);
 	}
+
 	free(swdata->sco[swdata->M]);
 	free(swdata->label[swdata->M]);
 
@@ -85,7 +86,7 @@ void MapAlign::InitMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 }
 
 double MapAlign::Intersect(const NListT& listA, const NListT& listB,
-		const std::vector<int>& a2b) {
+		const std::vector<int>& a2b, const std::vector<int>& b2a) {
 
 	double score = 0.0;
 
@@ -108,20 +109,20 @@ double MapAlign::Intersect(const NListT& listA, const NListT& listB,
 }
 
 void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
-		double gap_e, int iter, std::vector<int>& a2b) {
+		double gap_e, int iter) {
 
 	/* temp mtx[][] matrix */
 	double **mtx = (double**) malloc(swdata.M * sizeof(double*));
 	for (unsigned i = 0; i < swdata.M; i++) {
 		mtx[i] = (double*) malloc(swdata.N * sizeof(double));
-		memcpy(mtx[i], swdata.mtx[i], swdata.M);
+		memcpy(mtx[i], swdata.mtx[i], swdata.N);
 	}
 
 	/* iterate iter times */
 	for (int it = 0; it < iter; it++) {
 
 		/* align */
-		SW2(swdata, gap_e, a2b);
+		SW2(swdata, gap_e);
 
 		/*
 		 * update similarity matrix
@@ -135,7 +136,7 @@ void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 			const NListT& listA = A.GetLeftList(idxa);
 			for (auto &idxb : B.GetLeftMap()) {
 				const NListT& listB = B.GetLeftList(idxb);
-				double s = Intersect(listA, listB, a2b);
+				double s = Intersect(listA, listB, swdata.a2b, swdata.b2a);
 				swdata.mtx[idxa][idxb] += s * s2 / s1;
 			}
 		}
@@ -145,7 +146,7 @@ void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 			const NListT& listA = A.GetRightList(idxa);
 			for (auto &idxb : B.GetRightMap()) {
 				const NListT& listB = B.GetRightList(idxb);
-				double s = Intersect(listA, listB, a2b);
+				double s = Intersect(listA, listB, swdata.a2b, swdata.b2a);
 				swdata.mtx[idxa][idxb] += s * s2 / s1;
 			}
 		}
@@ -163,36 +164,78 @@ void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 
 	/* copy temp sco[][] back & free */
 	for (unsigned i = 0; i < swdata.M; i++) {
-		memcpy(swdata.mtx[i], mtx[i], swdata.M);
+		memcpy(swdata.mtx[i], mtx[i], swdata.N);
 		free(mtx[i]);
 	}
 	free(mtx);
 
 }
-vector<double> MapAlign::Assess(const CMap& A, const CMap& B,
-		const std::vector<int>& a2b, double gap_e_w) {
+vector<double> MapAlign::Assess(const SWDATA& swdata, const CMap& A,
+		const CMap& B, double gap_e_w) {
 
 	vector<double> scores;
 
 	/* score matched contacts */
-	double sco_con = 0.0;
+	double con_sco = 0.0, conA = 0.0;
 	for (auto &c : A.edges) {
-		int i = a2b[c.first.first];
-		int j = a2b[c.first.second];
+		int i = swdata.a2b[c.first.first];
+		int j = swdata.a2b[c.first.second];
 		if (i < 0 || j < 0) {
 			continue;
 		}
+		conA += c.second.first;
 		EListT::const_iterator it = B.edges.find( { i, j });
 		if (it != B.edges.end()) {
-			sco_con += c.second.first * it->second.first
+			con_sco += c.second.first * it->second.first
 					* sepw(min(c.second.second, it->second.second));
 		}
 	}
-	scores.push_back(sco_con);
+	scores.push_back(con_sco /* / conA */);
 
 	/* gap penalty score */
+	double gap_sco = 0.0;
+	int a = 0, b = 0;
+	for (unsigned ai = 0; ai < swdata.a2b.size(); ai++) {
+		int bi = swdata.a2b[ai];
+		if (bi > -1) {
+			if (a > 0) {
+				double num_gap_a = ((ai - a) - 1);
+				if (num_gap_a > 0) {
+					gap_sco += swdata.gap_a[ai]
+							+ swdata.gap_a[ai] * gap_e_w * (num_gap_a - 1);
+				}
+				double num_gap_b = ((bi - b) - 1);
+				if (num_gap_b > 0) {
+					gap_sco += swdata.gap_b[bi]
+							+ swdata.gap_b[bi] * gap_e_w * (num_gap_b - 1);
+				}
+			}
+			a = ai;
+			b = bi;
+		}
+	}
+	scores.push_back(0.5 * gap_sco);
 
 	return scores;
+
+}
+
+double GapScore(const std::vector<int>& a2b, const std::vector<double>& gap_a,
+		double gap_e_w) {
+
+	double score = 0.0;
+
+	bool fl = 0;
+
+	for (unsigned i = 0; i < a2b.size(); i++) {
+		if (a2b[i] < 0 && fl) {
+			score += gap_a[i];
+		}
+	}
+
+	/* trim */
+
+	return score;
 
 }
 
@@ -208,12 +251,17 @@ double MapAlign::Align(const CMap& A, const CMap& B, PARAMS& par,
 			A.Size(), par.gap_open), vector<double>(B.Size(), par.gap_open),
 			vector<int>(A.Size()), vector<int>(B.Size()) };
 	Alloc(&swdata);
+	double gap_ext_w = par.gap_ext / par.gap_open;
 
 	/*
 	 * (2) alignment routine
 	 */
 
+	double score_best = -9999.9;
+
 	/* try different sep (sequence separation difference) penalties */
+//	printf("# %6s%6s%7s%10s%10s%10s\n", "sep_x", "sep_y", "gap_e", "con_sco",
+//			"gap_sco", "tot_sco");
 	for (auto &sep_x : vector<double> { 0, 1, 2 }) {
 
 		/* try different scaling factors for sep penalties */
@@ -225,12 +273,18 @@ double MapAlign::Align(const CMap& A, const CMap& B, PARAMS& par,
 			/* try different gap_ext penalties */
 			for (auto &gap_e : vector<double> { 0.2, 0.1, 0.01, 0.001 }) {
 
-				vector<int> a2b(swdata.M, -1);
-				UpdateMTX(swdata, A, B, gap_e, par.iter, a2b);
-				vector<double> scores = Assess(A, B, a2b, 0.0);
+				UpdateMTX(swdata, A, B, gap_e, par.iter);
+				vector<double> scores = Assess(swdata, A, B, gap_ext_w);
 
-				printf("PAR: %.1e %.1e %.1e %12.3f\n", sep_x, sep_y, gap_e,
-						scores[0]);
+				double score = scores[0] + scores[1];
+
+//				printf("# %6.0f%6.0f%7.3f%10.3f%10.3f%10.3f\n", sep_x, sep_y,
+//						gap_e, scores[0], scores[1], score);
+
+				if (score > score_best) {
+					score_best = score;
+					a2b = swdata.a2b;
+				}
 
 			}
 
@@ -238,12 +292,14 @@ double MapAlign::Align(const CMap& A, const CMap& B, PARAMS& par,
 
 	}
 
+//	printf("# BEST: %12.6f\n", score_best);
+
 	/*
-	 * (10) free
+	 * (3) free
 	 */
 	Free(&swdata);
 
-	return score;
+	return score_best;
 
 }
 
@@ -341,14 +397,15 @@ double MapAlign::SW1(const NListT& A, const NListT& B, double sep_x,
 
 }
 
-double MapAlign::SW2(SWDATA& swdata, double gap_e, std::vector<int>& a2b) {
+double MapAlign::SW2(SWDATA& swdata, double gap_e) {
 
 	double score = 0.0;
 
 	unsigned rows = swdata.M;
 	unsigned cols = swdata.N;
 
-	a2b.assign(rows, -1);
+	swdata.a2b.assign(rows, -1);
+	swdata.b2a.assign(cols, -1);
 
 	/* init DP space */
 	memset(swdata.sco[0], 0, (cols + 1) * sizeof(double));
@@ -414,7 +471,8 @@ double MapAlign::SW2(SWDATA& swdata, double gap_e, std::vector<int>& a2b) {
 		if (swdata.label[i][j] == 0) {
 			break;
 		} else if (swdata.label[i][j] == 1) {
-			a2b[i - 1] = j - 1;
+			swdata.a2b[i - 1] = j - 1;
+			swdata.b2a[j - 1] = i - 1;
 			i--;
 			j--;
 		} else if (swdata.label[i][j] == 2) {

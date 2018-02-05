@@ -21,6 +21,13 @@ Chain::Chain() :
 
 }
 
+Chain::Chain(const std::string &name) :
+		Chain(name.c_str()) {
+
+	/* */
+
+}
+
 Chain::Chain(const char *name) :
 		atom(NULL), nAtoms(0), residue(NULL), nRes(0), kd(NULL), kdCA(
 		NULL), kdCent(NULL), ca_trace(NULL) {
@@ -29,7 +36,7 @@ Chain::Chain(const char *name) :
 	FILE *F;
 	F = fopen(name, "r");
 	if (F == NULL) {
-		fprintf(stderr, "ERROR: Can't open file %s\n", name);
+		fprintf(stderr, "ERROR: Can't open PDB file '%s'\n", name);
 		exit(1);
 	}
 

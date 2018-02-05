@@ -34,6 +34,15 @@ CMap & CMap::operator=(const CMap &source) {
 
 }
 
+CMap::CMap(const CMap &source) :
+		seq(source.seq), size(source.size), left(source.left), right(
+				source.right), mleft(source.mleft), mright(source.mright), edges(
+				source.edges) {
+
+	/* */
+
+}
+
 CMap::CMap(const std::string& name, const std::string& sequence) :
 		seq(sequence), size(seq.length()), left(size), right(size) {
 

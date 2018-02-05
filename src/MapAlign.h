@@ -41,22 +41,24 @@ private:
 	static double SW1(const NListT&, const NListT&, double, double);
 
 	/* step2 Smith-Waterman alignment */
-	static double SW2(SWDATA&, double gap_e, std::vector<int>& a2b);
+	static double SW2(SWDATA&, double gap_e);
 
 	/* TODO: current implementation is not very efficient */
 	static double Intersect(const NListT&, const NListT&,
-			const std::vector<int>&);
+			const std::vector<int>&, const std::vector<int>&);
 
 	/* a function to assess current alignment
 	 * based on contact/gap scores - returned as a vector */
-	static std::vector<double> Assess(const CMap&, const CMap&,
-			const std::vector<int>&, double);
+	static std::vector<double> Assess(const SWDATA&, const CMap&, const CMap&,
+			double);
+
+	static double GapScore(const std::vector<int>&, const std::vector<double>&,
+			double);
 
 	static void InitMTX(SWDATA&, const CMap&, const CMap&, double sep_x,
 			double sep_y);
 
-	static void UpdateMTX(SWDATA&, const CMap&, const CMap&, double, int iter,
-			std::vector<int>&);
+	static void UpdateMTX(SWDATA&, const CMap&, const CMap&, double, int iter);
 
 	static void CheckMTX();
 

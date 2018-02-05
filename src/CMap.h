@@ -57,6 +57,8 @@ public:
 	/* from adjacency list & sequence */
 	CMap(const AListT&, const std::string&);
 
+	CMap(const CMap &source);
+
 	CMap();
 
 	~CMap();

@@ -57,6 +57,7 @@ public:
 	/* CONSTRUCTORS */
 	Chain(); /* default constructor */
 	Chain(const char *name); /* constructs Chain by reading a PDB-file */
+	Chain(const std::string &name); /* constructs Chain by reading a PDB-file */
 	Chain(const Chain &source); /* copy constructor */
 	Chain(const std::vector<std::string> &atoms_str);
 
@@ -84,7 +85,6 @@ public:
 	 *    Chain(std::vector<AtomRecord>::iterator begin_it,
 	 *          std::vector<AtomRecord>::iterator end_it);
 	 *  3) int IfProtein();  number of standard AA */
-
 
 };
 
