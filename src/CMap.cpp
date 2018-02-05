@@ -91,15 +91,15 @@ CMap::CMap(const std::string& name, const std::string& sequence) :
 		/* left */
 		for (unsigned j = 0; j < i; j++) {
 			if (mtx[i][j] > 1.0e-6) {
-				left[i].push_back( { j, mtx[i][j], i - j });
+				left[i].push_back(std::make_tuple(j, mtx[i][j], i - j));
 			}
 		}
 
 		/* right */
 		for (unsigned j = i + 1; j < size; j++) {
 			if (mtx[i][j] > 1.0e-6) {
-				right[i].push_back( { j, mtx[i][j], j - i });
-				edges[ {i,j}] = {mtx[i][j], i - j};
+				right[i].push_back(std::make_tuple(j, mtx[i][j], j - i));
+				edges[ {i,j}] = {mtx[i][j], j - i};
 			}
 		}
 

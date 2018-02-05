@@ -242,7 +242,7 @@ double GapScore(const std::vector<int>& a2b, const std::vector<double>& gap_a,
 double MapAlign::Align(const CMap& A, const CMap& B, PARAMS& par,
 		vector<int>& a2b) {
 
-	double score = 0.0;
+//	double score = 0.0;
 
 	/*
 	 * (1) init alignment workspace
@@ -486,3 +486,14 @@ double MapAlign::SW2(SWDATA& swdata, double gap_e) {
 
 }
 
+double MapAlign::MaxScore(const CMap& A) {
+
+	double score = 0.0;
+
+	for (auto &a : A.edges) {
+		score += a.second.first * sepw(a.second.second);
+	}
+
+	return score;
+
+}

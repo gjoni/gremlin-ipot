@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
 		seqA = msa.GetSequence(0);
 	}
 	CMap mapA(opts.con, seqA);
+	printf("# %20s : %.3f\n", "max query score", MapAlign::MaxScore(mapA));
 
 	/*
 	 * (2) process single PDB input file (if any)
@@ -114,6 +115,7 @@ int main(int argc, char *argv[]) {
 		} else {
 			printf("--> %s skipped %d\n", id.c_str(), B.nRes);
 		}
+		fflush(stdout);
 	}
 //	printf("# %20s : %lu\n", "PDBs processed", mapsB.size());
 
@@ -256,7 +258,7 @@ CMap MapFromPDB(const Chain &C) {
 				continue;
 			}
 			if (mtx[i][j] > 1.0e-10) {
-				adj[i].push_back( { j, 1.0, sep });
+				adj[i].push_back(std::make_tuple(j, 1.0, sep));
 			}
 		}
 	}

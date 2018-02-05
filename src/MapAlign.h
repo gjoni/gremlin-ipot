@@ -71,6 +71,8 @@ public:
 		int iter;
 	};
 
+	static double MaxScore(const CMap&);
+
 	static double Align(const CMap&, const CMap&, PARAMS&, std::vector<int>&);
 
 };
