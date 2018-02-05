@@ -73,7 +73,8 @@ public:
 
 	static double MaxScore(const CMap&);
 
-	static double Align(const CMap&, const CMap&, PARAMS&, std::vector<int>&);
+	static double Align(const CMap&, const CMap&, const PARAMS&,
+			std::vector<int>&);
 
 };
 

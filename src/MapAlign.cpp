@@ -239,10 +239,8 @@ double GapScore(const std::vector<int>& a2b, const std::vector<double>& gap_a,
 
 }
 
-double MapAlign::Align(const CMap& A, const CMap& B, PARAMS& par,
+double MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par,
 		vector<int>& a2b) {
-
-//	double score = 0.0;
 
 	/*
 	 * (1) init alignment workspace

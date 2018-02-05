@@ -7,7 +7,10 @@
 
 #include <unistd.h>
 #include <string>
-#include <thread>
+//#include <thread>
+#include <future>
+
+#include <omp.h>
 
 #include "MSAclass.h"
 #include "Chain.h"
@@ -28,6 +31,7 @@ struct OPTS {
 	std::string prefix; /* prefix to output matches */
 	int num; /* number of models to save */
 	int verbose; /* verbosity level */
+	int nthreads; /* number of threads to use */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
@@ -40,19 +44,21 @@ void SaveMatch(std::string, const Chain&, const std::vector<int>&,
 void SaveAtom(FILE *F, Atom *A, int atomNum, int resNum, char type);
 
 /* TODO: for multithreaded execution */
-//std::pair<double, std::string> Align(const CMap&, const OPTS&, std::string&);
+std::pair<std::string, double> Align(const CMap&, const OPTS&,
+		const MapAlign::PARAMS& params, const std::string&);
+
 int main(int argc, char *argv[]) {
 
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { "", "", "", "", "", "", "", 0, 0 };
+	OPTS opts = { "", "", "", "", "", "", "", 0, 0, 1 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
 	}
-	const size_t nthreads = std::thread::hardware_concurrency();
-	printf("# %20s : %lu\n", "number of threads", nthreads);
+	omp_set_num_threads(opts.nthreads);
+	printf("# %20s : %d\n", "number of threads", opts.nthreads);
 	MapAlign::PARAMS params = { -1.0, -0.01, 3, 20 };
 
 	/*
@@ -104,19 +110,23 @@ int main(int argc, char *argv[]) {
 	printf("# %20s : %lu\n", "IDs read", listB.size());
 
 	/* read PDBs one by one and calculate alignments */
-	for (auto &id : listB) {
-		std::string name = opts.dir + "/" + id + ".pdb";
-		Chain B(name);
-		if (B.nRes > 15 && B.nRes < 1000) {
-			CMap mapB = MapFromPDB(B);
-			std::vector<int> a2b;
-			double score = MapAlign::Align(mapA, mapB, params, a2b);
-			printf("--> %s %.3f %d\n", id.c_str(), score, B.nRes);
-		} else {
-			printf("--> %s skipped %d\n", id.c_str(), B.nRes);
-		}
-		fflush(stdout);
+#pragma omp parallel for
+	for (unsigned i = 0; i < listB.size(); i++) {
+		std::pair<std::string, double> result = Align(mapA, opts, params,
+				listB[i]);
+#pragma omp critical
+		printf("--> %s %.3f\n", result.first.c_str(), result.second);
 	}
+//	for (auto &id : listB) {
+//		std::pair<std::string, double> res;
+//		threads.push_back(std::thread(Align, mapA, opts, params, id, res));
+
+//		std::pair<std::string, double> result = Align(mapA, opts, params, id);
+//		printf("--> %s %.3f\n", result.first.c_str(), result.second);
+//		fflush(stdout);
+
+//	}
+
 //	printf("# %20s : %lu\n", "PDBs processed", mapsB.size());
 
 	/*
@@ -141,7 +151,7 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -O PREFIX for saving top hits (input)\n");
 	printf("          -N number of top hits to save (input)\n\n");
 	printf("          ****************** misc ******************\n");
-//	printf("          -t number of threads \n");
+	printf("          -t number of threads \n");
 //	printf("          -m MAX_RES skip templates over the residue count limit\n");
 	printf("          -v verbosity level \n");
 
@@ -150,7 +160,7 @@ void PrintOpts(const OPTS &opts) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hs:c:p:o:D:L:O:N:v:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hs:c:p:o:D:L:O:N:v:t:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -182,6 +192,9 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 			break;
 		case 'v': /* verbosity level */
 			opts.verbose = atoi(optarg);
+			break;
+		case 't': /* number of threads */
+			opts.nthreads = atoi(optarg);
 			break;
 		default:
 			return false;
@@ -306,5 +319,23 @@ void SaveMatch(std::string name, const Chain& C, const std::vector<int>& a2b,
 	}
 
 	fclose(F);
+
+}
+
+std::pair<std::string, double> Align(const CMap& mapA, const OPTS& opts,
+		const MapAlign::PARAMS& params, const std::string& id) {
+
+	std::string name = opts.dir + "/" + id + ".pdb";
+	Chain B(name);
+	if (B.nRes > 15 && B.nRes < 1000) {
+		CMap mapB = MapFromPDB(B);
+		std::vector<int> a2b;
+		double score = MapAlign::Align(mapA, mapB, params, a2b);
+//		printf("--> %s %.3f %d\n", id.c_str(), score, B.nRes);
+		return std::make_pair(id, score);
+	} else {
+//		printf("--> %s skipped %d\n", id.c_str(), B.nRes);
+		return std::make_pair(id, -1.0);
+	}
 
 }
