@@ -7,8 +7,7 @@
 
 #include <unistd.h>
 #include <string>
-//#include <thread>
-#include <future>
+#include <algorithm>
 
 #include <omp.h>
 
@@ -20,6 +19,7 @@
 
 #define DMAX 5.0
 #define KMIN 3
+#define VERSION "V20180206"
 
 struct OPTS {
 	std::string seq; /* sequence file */
@@ -29,20 +29,27 @@ struct OPTS {
 	std::string dir; /* folder where templates are stored */
 	std::string list; /* list of template IDs (file) */
 	std::string prefix; /* prefix to output matches */
-	int num; /* number of models to save */
+	unsigned num; /* number of models to save */
 	int nthreads; /* number of threads to use */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
 
+void PrintCap(const OPTS &opts);
+
 CMap MapFromPDB(const Chain &C);
 void SaveMatch(std::string, const Chain&, const std::vector<int>&,
 		const std::string&);
 void SaveAtom(FILE *F, Atom *A, int atomNum, int resNum, char type);
 
-std::pair<std::string, MP_RESULT> Align(const CMap&, const OPTS&,
-		const MapAlign::PARAMS& params, const std::string&);
+MP_RESULT Align(const CMap&, const OPTS&, const MapAlign::PARAMS& params,
+		const std::string&);
+
+bool compare(const std::pair<std::string, MP_RESULT> &a,
+		const std::pair<std::string, MP_RESULT> &b) {
+	return (a.second.sco[0] > b.second.sco[0]);
+}
 
 int main(int argc, char *argv[]) {
 
@@ -54,11 +61,13 @@ int main(int argc, char *argv[]) {
 		PrintOpts(opts);
 		return 1;
 	}
+
+#if defined(_OPENMP)
 	omp_set_num_threads(opts.nthreads);
-	printf("# %20s : %d\n", "number of threads", opts.nthreads);
-	printf("# %20s : %s\n", "sequence file", opts.seq.c_str());
-	printf("# %20s : %s\n", "contacts file", opts.con.c_str());
+#endif
+
 	MapAlign::PARAMS params = { -1.0, -0.01, 3, 10 };
+	PrintCap(opts);
 
 	/*
 	 * (1) create contact map object
@@ -70,7 +79,6 @@ int main(int argc, char *argv[]) {
 		seqA = msa.GetSequence(0);
 	}
 	CMap mapA(opts.con, seqA);
-	printf("# %20s : %.3f\n", "max query score", MapAlign::MaxScore(mapA));
 
 	/*
 	 * (2) process single PDB input file (if any)
@@ -106,30 +114,33 @@ int main(int argc, char *argv[]) {
 		}
 		fclose(F);
 	}
-	printf("# %20s : %lu\n", "IDs read", listB.size());
-
-	/* TODO: make separate loops for single CPU
-	 *       and multithreaded executions */
-
-	/* TODO: make output of Align(...) function
-	 *       more meaningful */
 
 	/* read PDBs one by one and calculate alignments */
+	std::vector<std::pair<std::string, MP_RESULT> > hits;
+
+#if defined(_OPENMP)
 #pragma omp parallel for
+#endif
 	for (unsigned i = 0; i < listB.size(); i++) {
-		std::pair<std::string, MP_RESULT> result = Align(mapA, opts, params,
-				listB[i]);
+		MP_RESULT result = Align(mapA, opts, params, listB[i]);
+
+#if defined(_OPENMP)
 #pragma omp critical
+#endif
 		{
-			printf("--> %s %s", result.first.c_str(),
-					result.second.label.c_str());
-			for (auto &s : result.second.sco) {
-				printf(" %.3f", s);
+			if (result.sco.size()) {
+				printf("# %10s %15s", listB[i].c_str(), result.label.c_str());
+				for (auto &s : result.sco) {
+					printf(" %10.3f", s);
+				}
+				for (auto &s : result.len) {
+					printf(" %5d", s);
+				}
+				printf("\n");
+				hits.push_back(std::make_pair(listB[i], result));
+			} else {
+				printf("# %10s %15s\n", listB[i].c_str(), "...skipped...");
 			}
-			for (auto &s : result.second.len) {
-				printf(" %d", s);
-			}
-			printf("\n");
 		}
 
 	}
@@ -137,6 +148,39 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (4) save top hits
 	 */
+	if (opts.num) {
+
+		printf("# %s\n", std::string(70, '-').c_str());
+
+		/* make sure that topN results exist */
+		opts.num = hits.size() < opts.num ? hits.size() : opts.num;
+
+		/* sort in decreasing order of
+		 * contact_score + gap_score */
+		std::sort(hits.begin(), hits.end(), compare);
+
+		/* print info about topN matches */
+		for (unsigned i = 0; i < opts.num; i++) {
+			std::string &id = hits[i].first;
+			MP_RESULT &result = hits[i].second;
+			printf("T %10s %15s", id.c_str(), result.label.c_str());
+			for (auto &s : result.sco) {
+				printf(" %10.3f", s);
+			}
+			for (auto &s : result.len) {
+				printf(" %5d", s);
+			}
+			printf("\n");
+
+			/* save partial matches (if requested) */
+			if (opts.prefix != "") {
+				std::string name = opts.dir + "/" + id + ".pdb";
+				Chain B(name);
+				name = opts.prefix + id + ".pdb";
+				SaveMatch(name, B, result.a2b, seqA);
+			}
+		}
+	}
 
 	return 0;
 
@@ -161,10 +205,33 @@ void PrintOpts(const OPTS &opts) {
 
 }
 
+void PrintCap(const OPTS &opts) {
+
+	printf("# %s\n", std::string(70, '-').c_str());
+	printf("# map_align - a program to align protein contact maps %18s\n",
+	VERSION);
+	printf("# %s\n", std::string(70, '-').c_str());
+
+	printf("# %20s : %s\n", "sequence file", opts.seq.c_str());
+	printf("# %20s : %s\n", "contacts file", opts.con.c_str());
+	printf("# %20s : %s\n", "list file", opts.list.c_str());
+	printf("# %20s : %s\n", "path to templates", opts.dir.c_str());
+	printf("# %20s : %d\n", "threads", opts.nthreads);
+
+	printf("# %s\n", std::string(70, '-').c_str());
+
+	printf("#\n");
+	printf("# %10s %15s %10s %10s %10s %10s %10s %10s %5s %5s %5s\n", "TMPLT",
+			"best_params", "cont_sco", "gap_sco", "max_scoA", "max_scoB",
+			"tot_scoA", "tot_scoB", "Nali", "lenA", "lenB");
+	printf("#\n");
+
+}
+
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hs:c:p:o:D:L:O:N:v:t:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hs:c:p:o:D:L:O:N:v:t:M:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -323,7 +390,7 @@ void SaveMatch(std::string name, const Chain& C, const std::vector<int>& a2b,
 
 }
 
-std::pair<std::string, MP_RESULT> Align(const CMap& mapA, const OPTS& opts,
+MP_RESULT Align(const CMap& mapA, const OPTS& opts,
 		const MapAlign::PARAMS& params, const std::string& id) {
 
 	std::string name = opts.dir + "/" + id + ".pdb";
@@ -332,9 +399,8 @@ std::pair<std::string, MP_RESULT> Align(const CMap& mapA, const OPTS& opts,
 	if (B.nRes > 20 && B.nRes < 1000) {
 		CMap mapB = MapFromPDB(B);
 		result = MapAlign::Align(mapA, mapB, params);
-		return std::make_pair(id, result);
-	} else {
-		return std::make_pair(id, result);
 	}
+
+	return result;
 
 }

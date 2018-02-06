@@ -24,8 +24,8 @@ using namespace std;
 
 void MapAlign::Alloc(SWDATA *swdata) {
 
-	unsigned M = swdata->M;
-	unsigned N = swdata->N;
+	unsigned M = swdata->A.size;
+	unsigned N = swdata->B.size;
 
 	swdata->mtx = (double**) malloc(M * sizeof(double*));
 	swdata->sco = (double**) malloc((M + 1) * sizeof(double*));
@@ -42,14 +42,16 @@ void MapAlign::Alloc(SWDATA *swdata) {
 
 void MapAlign::Free(SWDATA* swdata) {
 
-	for (unsigned i = 0; i < swdata->M; i++) {
+	unsigned M = swdata->A.size;
+
+	for (unsigned i = 0; i < M; i++) {
 		free(swdata->mtx[i]);
 		free(swdata->sco[i]);
 		free(swdata->label[i]);
 	}
 
-	free(swdata->sco[swdata->M]);
-	free(swdata->label[swdata->M]);
+	free(swdata->sco[M]);
+	free(swdata->label[M]);
 
 	free(swdata->mtx);
 	free(swdata->sco);
@@ -57,28 +59,27 @@ void MapAlign::Free(SWDATA* swdata) {
 
 }
 
-void MapAlign::InitMTX(SWDATA& swdata, const CMap& A, const CMap& B,
-		double sep_x, double sep_y) {
+void MapAlign::InitMTX(SWDATA& swdata, double sep_x, double sep_y) {
 
 	/* init mtx[][] */
-	for (unsigned i = 0; i < swdata.M; i++) {
-		memset(swdata.mtx[i], 0, swdata.N * sizeof(double));
+	for (unsigned i = 0; i < swdata.A.size; i++) {
+		memset(swdata.mtx[i], 0, swdata.B.size * sizeof(double));
 	}
 
 	/* left of diagonal */
-	for (auto &idxa : A.GetLeftMap()) {
-		const NListT& listA = A.GetLeftList(idxa);
-		for (auto &idxb : B.GetLeftMap()) {
-			const NListT& listB = B.GetLeftList(idxb);
+	for (auto &idxa : swdata.A.mleft) {
+		const NListT& listA = swdata.A.left[idxa];
+		for (auto &idxb : swdata.B.mleft) {
+			const NListT& listB = swdata.B.left[idxb];
 			swdata.mtx[idxa][idxb] += SW1(listA, listB, sep_x, sep_y);
 		}
 	}
 
 	/* right of diagonal */
-	for (auto &idxa : A.GetRightMap()) {
-		const NListT& listA = A.GetRightList(idxa);
-		for (auto &idxb : B.GetRightMap()) {
-			const NListT& listB = B.GetRightList(idxb);
+	for (auto &idxa : swdata.A.mright) {
+		const NListT& listA = swdata.A.right[idxa];
+		for (auto &idxb : swdata.B.mright) {
+			const NListT& listB = swdata.B.right[idxb];
 			swdata.mtx[idxa][idxb] += SW1(listA, listB, sep_x, sep_y);
 		}
 	}
@@ -108,14 +109,13 @@ double MapAlign::Intersect(const NListT& listA, const NListT& listB,
 
 }
 
-void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
-		double gap_e, int iter) {
+void MapAlign::UpdateMTX(SWDATA& swdata, double gap_e, int iter) {
 
 	/* temp mtx[][] matrix */
-	double **mtx = (double**) malloc(swdata.M * sizeof(double*));
-	for (unsigned i = 0; i < swdata.M; i++) {
-		mtx[i] = (double*) malloc(swdata.N * sizeof(double));
-		memcpy(mtx[i], swdata.mtx[i], swdata.N);
+	double **mtx = (double**) malloc(swdata.A.size * sizeof(double*));
+	for (unsigned i = 0; i < swdata.A.size; i++) {
+		mtx[i] = (double*) malloc(swdata.B.size * sizeof(double));
+		memcpy(mtx[i], swdata.mtx[i], swdata.B.size);
 	}
 
 	/* iterate iter times */
@@ -132,28 +132,28 @@ void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 		double s2 = 1.0 - s1;
 
 		/* left of diagonal */
-		for (auto &idxa : A.GetLeftMap()) {
-			const NListT& listA = A.GetLeftList(idxa);
-			for (auto &idxb : B.GetLeftMap()) {
-				const NListT& listB = B.GetLeftList(idxb);
+		for (auto &idxa : swdata.A.mleft) {
+			const NListT& listA = swdata.A.left[idxa];
+			for (auto &idxb : swdata.B.mleft) {
+				const NListT& listB = swdata.B.left[idxb];
 				double s = Intersect(listA, listB, swdata.a2b, swdata.b2a);
 				swdata.mtx[idxa][idxb] += s * s2 / s1;
 			}
 		}
 
 		/* right of diagonal */
-		for (auto &idxa : A.GetRightMap()) {
-			const NListT& listA = A.GetRightList(idxa);
-			for (auto &idxb : B.GetRightMap()) {
-				const NListT& listB = B.GetRightList(idxb);
+		for (auto &idxa : swdata.A.mright) {
+			const NListT& listA = swdata.A.right[idxa];
+			for (auto &idxb : swdata.B.mright) {
+				const NListT& listB = swdata.B.right[idxb];
 				double s = Intersect(listA, listB, swdata.a2b, swdata.b2a);
 				swdata.mtx[idxa][idxb] += s * s2 / s1;
 			}
 		}
 
 		/* rescale scoring matrix */
-		for (unsigned i = 0; i < swdata.M; i++) {
-			for (unsigned j = 0; j < swdata.N; j++) {
+		for (unsigned i = 0; i < swdata.A.size; i++) {
+			for (unsigned j = 0; j < swdata.B.size; j++) {
 				if (swdata.mtx[i][j] > 1.0e-10) {
 					swdata.mtx[i][j] *= s1;
 				}
@@ -163,41 +163,45 @@ void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 	}
 
 	/* copy temp sco[][] back & free */
-	for (unsigned i = 0; i < swdata.M; i++) {
-		memcpy(swdata.mtx[i], mtx[i], swdata.N);
+	for (unsigned i = 0; i < swdata.A.size; i++) {
+		memcpy(swdata.mtx[i], mtx[i], swdata.B.size);
 		free(mtx[i]);
 	}
 	free(mtx);
 
 }
 
-MP_RESULT MapAlign::Assess(const SWDATA& swdata, const CMap& A, const CMap& B,
-		double gap_e_w) {
+MP_RESULT MapAlign::Assess(const SWDATA& swdata, double gap_e_w) {
 
 	MP_RESULT scores;
 
 	/* score matched contacts */
 	double con_sco = 0.0, conA = 0.0, conB = 0.0;
-	int naligned = 0;
-	for (auto &c : A.edges) {
+	for (auto &c : swdata.A.edges) {
 		int i = swdata.a2b[c.first.first];
 		int j = swdata.a2b[c.first.second];
 		if (i < 0 || j < 0) {
 			continue;
 		}
 		conA += c.second.first * sepw(c.second.second);
-		EListT::const_iterator it = B.edges.find( { i, j });
-		if (it != B.edges.end()) {
+		EListT::const_iterator it = swdata.B.edges.find( { i, j });
+		if (it != swdata.B.edges.end()) {
 			con_sco += c.second.first * it->second.first
 					* sepw(min(c.second.second, it->second.second));
-			naligned++;
 		}
 	}
 	scores.sco.push_back(con_sco);
 
-	for (auto &c : B.edges) {
+	for (auto &c : swdata.B.edges) {
 		if (swdata.b2a[c.first.first] >= 0 || swdata.b2a[c.first.second] >= 0) {
 			conB += c.second.first * sepw(c.second.second);
+		}
+	}
+
+	int naligned = 0;
+	for (auto &a : swdata.a2b) {
+		if (a > -1) {
+			naligned++;
 		}
 	}
 
@@ -231,8 +235,8 @@ MP_RESULT MapAlign::Assess(const SWDATA& swdata, const CMap& A, const CMap& B,
 	scores.sco.push_back(swdata.tot_scoB);
 
 	scores.len.push_back(naligned);
-	scores.len.push_back(swdata.M);
-	scores.len.push_back(swdata.N);
+	scores.len.push_back(swdata.A.size);
+	scores.len.push_back(swdata.B.size);
 
 	return scores;
 
@@ -243,10 +247,9 @@ MP_RESULT MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par) {
 	/*
 	 * (1) init alignment workspace
 	 */
-	SWDATA swdata =
-			{ A, B, A.Size(), B.Size(), NULL, NULL, NULL, vector<double>(
-					A.Size(), par.gap_open), vector<double>(B.Size(),
-					par.gap_open), vector<int>(A.Size()), vector<int>(B.Size()) };
+	SWDATA swdata = { A, B, NULL, NULL, NULL, vector<double>(A.size,
+			par.gap_open), vector<double>(B.size, par.gap_open), vector<int>(
+			A.size), vector<int>(B.size) };
 	Alloc(&swdata);
 	double gap_ext_w = par.gap_ext / par.gap_open;
 
@@ -272,13 +275,13 @@ MP_RESULT MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par) {
 		for (auto &sep_y : vector<double> { 1, 2, 4, 8, 16, 32 }) {
 
 			/* get initial score matrix */
-			InitMTX(swdata, A, B, sep_x, sep_y);
+			InitMTX(swdata, sep_x, sep_y);
 
 			/* try different gap_ext penalties */
 			for (auto &gap_e : vector<double> { 0.2, 0.1, 0.01, 0.001 }) {
 
-				UpdateMTX(swdata, A, B, gap_e, par.iter);
-				MP_RESULT scores = Assess(swdata, A, B, gap_ext_w);
+				UpdateMTX(swdata, gap_e, par.iter);
+				MP_RESULT scores = Assess(swdata, gap_ext_w);
 
 				double score = scores.sco[0] + scores.sco[1];
 
@@ -287,7 +290,7 @@ MP_RESULT MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par) {
 					result_best = scores;
 					result_best.a2b = swdata.a2b;
 					char buf[100];
-					sprintf(buf, "%.3f_%.3f_%.3f", sep_x, sep_y, gap_e);
+					sprintf(buf, "%.1f_%.1f_%.3f", sep_x, sep_y, gap_e);
 					result_best.label = buf;
 				}
 
@@ -404,8 +407,8 @@ double MapAlign::SW2(SWDATA& swdata, double gap_e) {
 
 	double score = 0.0;
 
-	unsigned rows = swdata.M;
-	unsigned cols = swdata.N;
+	unsigned rows = swdata.A.size;
+	unsigned cols = swdata.B.size;
 
 	swdata.a2b.assign(rows, -1);
 	swdata.b2a.assign(cols, -1);

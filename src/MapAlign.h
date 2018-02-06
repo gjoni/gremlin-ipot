@@ -30,7 +30,6 @@ private:
 	struct SWDATA {
 		const CMap &A;
 		const CMap &B;
-		unsigned M, N; /* dimensions */
 		double **mtx; /* contacts scoring matrix (M x N) */
 		double **sco; /* DP scoring matrix (M + 1) x (N + 1) */
 		char **label; /* path in the DP matrix (M + 1) x (N + 1) */
@@ -60,12 +59,11 @@ private:
 
 	/* a function to assess current alignment
 	 * based on contact/gap scores - returned as a vector */
-	static MP_RESULT Assess(const SWDATA&, const CMap&, const CMap&, double);
+	static MP_RESULT Assess(const SWDATA&, double);
 
-	static void InitMTX(SWDATA&, const CMap&, const CMap&, double sep_x,
-			double sep_y);
+	static void InitMTX(SWDATA&, double sep_x, double sep_y);
 
-	static void UpdateMTX(SWDATA&, const CMap&, const CMap&, double, int iter);
+	static void UpdateMTX(SWDATA&, double, int iter);
 
 public:
 
