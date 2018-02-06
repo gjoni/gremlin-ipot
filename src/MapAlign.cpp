@@ -170,27 +170,36 @@ void MapAlign::UpdateMTX(SWDATA& swdata, const CMap& A, const CMap& B,
 	free(mtx);
 
 }
-vector<double> MapAlign::Assess(const SWDATA& swdata, const CMap& A,
-		const CMap& B, double gap_e_w) {
 
-	vector<double> scores;
+MP_RESULT MapAlign::Assess(const SWDATA& swdata, const CMap& A, const CMap& B,
+		double gap_e_w) {
+
+	MP_RESULT scores;
 
 	/* score matched contacts */
-	double con_sco = 0.0, conA = 0.0;
+	double con_sco = 0.0, conA = 0.0, conB = 0.0;
+	int naligned = 0;
 	for (auto &c : A.edges) {
 		int i = swdata.a2b[c.first.first];
 		int j = swdata.a2b[c.first.second];
 		if (i < 0 || j < 0) {
 			continue;
 		}
-		conA += c.second.first;
+		conA += c.second.first * sepw(c.second.second);
 		EListT::const_iterator it = B.edges.find( { i, j });
 		if (it != B.edges.end()) {
 			con_sco += c.second.first * it->second.first
 					* sepw(min(c.second.second, it->second.second));
+			naligned++;
 		}
 	}
-	scores.push_back(con_sco /* / conA */);
+	scores.sco.push_back(con_sco);
+
+	for (auto &c : B.edges) {
+		if (swdata.b2a[c.first.first] >= 0 || swdata.b2a[c.first.second] >= 0) {
+			conB += c.second.first * sepw(c.second.second);
+		}
+	}
 
 	/* gap penalty score */
 	double gap_sco = 0.0;
@@ -214,52 +223,49 @@ vector<double> MapAlign::Assess(const SWDATA& swdata, const CMap& A,
 			b = bi;
 		}
 	}
-	scores.push_back(0.5 * gap_sco);
+	scores.sco.push_back(0.5 * gap_sco);
+
+	scores.sco.push_back(conA);
+	scores.sco.push_back(conB);
+	scores.sco.push_back(swdata.tot_scoA);
+	scores.sco.push_back(swdata.tot_scoB);
+
+	scores.len.push_back(naligned);
+	scores.len.push_back(swdata.M);
+	scores.len.push_back(swdata.N);
 
 	return scores;
 
 }
 
-double GapScore(const std::vector<int>& a2b, const std::vector<double>& gap_a,
-		double gap_e_w) {
-
-	double score = 0.0;
-
-	bool fl = 0;
-
-	for (unsigned i = 0; i < a2b.size(); i++) {
-		if (a2b[i] < 0 && fl) {
-			score += gap_a[i];
-		}
-	}
-
-	/* trim */
-
-	return score;
-
-}
-
-double MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par,
-		vector<int>& a2b) {
+MP_RESULT MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par) {
 
 	/*
 	 * (1) init alignment workspace
 	 */
-	SWDATA swdata = { A.Size(), B.Size(), NULL, NULL, NULL, vector<double>(
-			A.Size(), par.gap_open), vector<double>(B.Size(), par.gap_open),
-			vector<int>(A.Size()), vector<int>(B.Size()) };
+	SWDATA swdata =
+			{ A, B, A.Size(), B.Size(), NULL, NULL, NULL, vector<double>(
+					A.Size(), par.gap_open), vector<double>(B.Size(),
+					par.gap_open), vector<int>(A.Size()), vector<int>(B.Size()) };
 	Alloc(&swdata);
 	double gap_ext_w = par.gap_ext / par.gap_open;
+
+	swdata.tot_scoA = swdata.tot_scoB = 0.0;
+	for (auto &e : A.edges) {
+		swdata.tot_scoA += e.second.first * sepw(e.second.second);
+	}
+	for (auto &e : B.edges) {
+		swdata.tot_scoB += e.second.first * sepw(e.second.second);
+	}
 
 	/*
 	 * (2) alignment routine
 	 */
 
 	double score_best = -9999.9;
+	MP_RESULT result_best;
 
 	/* try different sep (sequence separation difference) penalties */
-//	printf("# %6s%6s%7s%10s%10s%10s\n", "sep_x", "sep_y", "gap_e", "con_sco",
-//			"gap_sco", "tot_sco");
 	for (auto &sep_x : vector<double> { 0, 1, 2 }) {
 
 		/* try different scaling factors for sep penalties */
@@ -272,16 +278,17 @@ double MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par,
 			for (auto &gap_e : vector<double> { 0.2, 0.1, 0.01, 0.001 }) {
 
 				UpdateMTX(swdata, A, B, gap_e, par.iter);
-				vector<double> scores = Assess(swdata, A, B, gap_ext_w);
+				MP_RESULT scores = Assess(swdata, A, B, gap_ext_w);
 
-				double score = scores[0] + scores[1];
-
-//				printf("# %6.0f%6.0f%7.3f%10.3f%10.3f%10.3f\n", sep_x, sep_y,
-//						gap_e, scores[0], scores[1], score);
+				double score = scores.sco[0] + scores.sco[1];
 
 				if (score > score_best) {
 					score_best = score;
-					a2b = swdata.a2b;
+					result_best = scores;
+					result_best.a2b = swdata.a2b;
+					char buf[100];
+					sprintf(buf, "%.3f_%.3f_%.3f", sep_x, sep_y, gap_e);
+					result_best.label = buf;
 				}
 
 			}
@@ -290,14 +297,12 @@ double MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par,
 
 	}
 
-//	printf("# BEST: %12.6f\n", score_best);
-
 	/*
 	 * (3) free
 	 */
 	Free(&swdata);
 
-	return score_best;
+	return result_best;
 
 }
 

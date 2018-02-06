@@ -14,6 +14,13 @@
 
 using namespace std;
 
+struct MP_RESULT {
+	std::string label;
+	std::vector<double> sco;
+	std::vector<int> len;
+	std::vector<int> a2b;
+};
+
 class MapAlign {
 private:
 
@@ -21,6 +28,8 @@ private:
 	~MapAlign();
 
 	struct SWDATA {
+		const CMap &A;
+		const CMap &B;
 		unsigned M, N; /* dimensions */
 		double **mtx; /* contacts scoring matrix (M x N) */
 		double **sco; /* DP scoring matrix (M + 1) x (N + 1) */
@@ -29,6 +38,8 @@ private:
 		std::vector<double> gap_b; /* gap opening penalties for B */
 		std::vector<int> a2b;
 		std::vector<int> b2a;
+		double tot_scoA;
+		double tot_scoB;
 	};
 
 	static void Alloc(SWDATA*);
@@ -49,18 +60,12 @@ private:
 
 	/* a function to assess current alignment
 	 * based on contact/gap scores - returned as a vector */
-	static std::vector<double> Assess(const SWDATA&, const CMap&, const CMap&,
-			double);
-
-	static double GapScore(const std::vector<int>&, const std::vector<double>&,
-			double);
+	static MP_RESULT Assess(const SWDATA&, const CMap&, const CMap&, double);
 
 	static void InitMTX(SWDATA&, const CMap&, const CMap&, double sep_x,
 			double sep_y);
 
 	static void UpdateMTX(SWDATA&, const CMap&, const CMap&, double, int iter);
-
-	static void CheckMTX();
 
 public:
 
@@ -73,8 +78,7 @@ public:
 
 	static double MaxScore(const CMap&);
 
-	static double Align(const CMap&, const CMap&, const PARAMS&,
-			std::vector<int>&);
+	static MP_RESULT Align(const CMap&, const CMap&, const PARAMS&);
 
 };
 

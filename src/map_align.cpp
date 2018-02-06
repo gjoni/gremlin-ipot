@@ -30,21 +30,18 @@ struct OPTS {
 	std::string list; /* list of template IDs (file) */
 	std::string prefix; /* prefix to output matches */
 	int num; /* number of models to save */
-	int verbose; /* verbosity level */
 	int nthreads; /* number of threads to use */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
 
-/* TODO: ??? move 3 these functions to CMap class ??? */
 CMap MapFromPDB(const Chain &C);
 void SaveMatch(std::string, const Chain&, const std::vector<int>&,
 		const std::string&);
 void SaveAtom(FILE *F, Atom *A, int atomNum, int resNum, char type);
 
-/* TODO: for multithreaded execution */
-std::pair<std::string, double> Align(const CMap&, const OPTS&,
+std::pair<std::string, MP_RESULT> Align(const CMap&, const OPTS&,
 		const MapAlign::PARAMS& params, const std::string&);
 
 int main(int argc, char *argv[]) {
@@ -52,14 +49,16 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { "", "", "", "", "", "", "", 0, 0, 1 };
+	OPTS opts = { "", "", "", "", "", "", "", 0, 1 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
 	}
 	omp_set_num_threads(opts.nthreads);
 	printf("# %20s : %d\n", "number of threads", opts.nthreads);
-	MapAlign::PARAMS params = { -1.0, -0.01, 3, 20 };
+	printf("# %20s : %s\n", "sequence file", opts.seq.c_str());
+	printf("# %20s : %s\n", "contacts file", opts.con.c_str());
+	MapAlign::PARAMS params = { -1.0, -0.01, 3, 10 };
 
 	/*
 	 * (1) create contact map object
@@ -80,7 +79,7 @@ int main(int argc, char *argv[]) {
 		Chain C(opts.pdb);
 		CMap mapB(MapFromPDB(C));
 		std::vector<int> a2b;
-		MapAlign::Align(mapA, mapB, params, a2b);
+		MP_RESULT result = MapAlign::Align(mapA, mapB, params);
 		if (opts.out != "") {
 			SaveMatch(opts.out, C, a2b, seqA);
 		}
@@ -109,25 +108,31 @@ int main(int argc, char *argv[]) {
 	}
 	printf("# %20s : %lu\n", "IDs read", listB.size());
 
+	/* TODO: make separate loops for single CPU
+	 *       and multithreaded executions */
+
+	/* TODO: make output of Align(...) function
+	 *       more meaningful */
+
 	/* read PDBs one by one and calculate alignments */
 #pragma omp parallel for
 	for (unsigned i = 0; i < listB.size(); i++) {
-		std::pair<std::string, double> result = Align(mapA, opts, params,
+		std::pair<std::string, MP_RESULT> result = Align(mapA, opts, params,
 				listB[i]);
 #pragma omp critical
-		printf("--> %s %.3f\n", result.first.c_str(), result.second);
+		{
+			printf("--> %s %s", result.first.c_str(),
+					result.second.label.c_str());
+			for (auto &s : result.second.sco) {
+				printf(" %.3f", s);
+			}
+			for (auto &s : result.second.len) {
+				printf(" %d", s);
+			}
+			printf("\n");
+		}
+
 	}
-//	for (auto &id : listB) {
-//		std::pair<std::string, double> res;
-//		threads.push_back(std::thread(Align, mapA, opts, params, id, res));
-
-//		std::pair<std::string, double> result = Align(mapA, opts, params, id);
-//		printf("--> %s %.3f\n", result.first.c_str(), result.second);
-//		fflush(stdout);
-
-//	}
-
-//	printf("# %20s : %lu\n", "PDBs processed", mapsB.size());
 
 	/*
 	 * (4) save top hits
@@ -139,7 +144,7 @@ int main(int argc, char *argv[]) {
 
 void PrintOpts(const OPTS &opts) {
 
-	printf("Usage:   ./map_align [-option] [argument]\n\n");
+	printf("\nUsage:   ./map_align [-option] [argument]\n\n");
 	printf("Options:  -s sequence.fas (input, required)\n");
 	printf("          -c contacts.txt (input, required)\n\n");
 	printf("          ************* single template ************\n");
@@ -149,11 +154,10 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -D PATH_TO_TEMPLATES (input)\n");
 	printf("          -L list.txt (input)\n");
 	printf("          -O PREFIX for saving top hits (input)\n");
-	printf("          -N number of top hits to save (input)\n\n");
+	printf("          -N number of top hits to save (input)\n");
+	printf("          -M max number of residues in the template\n\n");
 	printf("          ****************** misc ******************\n");
-	printf("          -t number of threads \n");
-//	printf("          -m MAX_RES skip templates over the residue count limit\n");
-	printf("          -v verbosity level \n");
+	printf("          -t number of threads\n\n");
 
 }
 
@@ -189,9 +193,6 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 			break;
 		case 'N': /* list file of template IDs */
 			opts.num = atoi(optarg);
-			break;
-		case 'v': /* verbosity level */
-			opts.verbose = atoi(optarg);
 			break;
 		case 't': /* number of threads */
 			opts.nthreads = atoi(optarg);
@@ -322,20 +323,18 @@ void SaveMatch(std::string name, const Chain& C, const std::vector<int>& a2b,
 
 }
 
-std::pair<std::string, double> Align(const CMap& mapA, const OPTS& opts,
+std::pair<std::string, MP_RESULT> Align(const CMap& mapA, const OPTS& opts,
 		const MapAlign::PARAMS& params, const std::string& id) {
 
 	std::string name = opts.dir + "/" + id + ".pdb";
 	Chain B(name);
-	if (B.nRes > 15 && B.nRes < 1000) {
+	MP_RESULT result;
+	if (B.nRes > 20 && B.nRes < 1000) {
 		CMap mapB = MapFromPDB(B);
-		std::vector<int> a2b;
-		double score = MapAlign::Align(mapA, mapB, params, a2b);
-//		printf("--> %s %.3f %d\n", id.c_str(), score, B.nRes);
-		return std::make_pair(id, score);
+		result = MapAlign::Align(mapA, mapB, params);
+		return std::make_pair(id, result);
 	} else {
-//		printf("--> %s skipped %d\n", id.c_str(), B.nRes);
-		return std::make_pair(id, -1.0);
+		return std::make_pair(id, result);
 	}
 
 }
