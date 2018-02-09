@@ -12,12 +12,15 @@
 #include "MapAlign.h"
 
 MapAlign::MapAlign() {
-	// TODO Auto-generated constructor stub
+
+	/* */
 
 }
 
 MapAlign::~MapAlign() {
-	// TODO Auto-generated destructor stub
+
+	/* */
+
 }
 
 using namespace std;
@@ -283,6 +286,8 @@ MP_RESULT MapAlign::Align(const CMap& A, const CMap& B, const PARAMS& par) {
 				UpdateMTX(swdata, gap_e, par.iter);
 				MP_RESULT scores = Assess(swdata, gap_ext_w);
 
+				/* save best hit based on
+				 * contacts score and gaps score */
 				double score = scores.sco[0] + scores.sco[1];
 
 				if (score > score_best) {

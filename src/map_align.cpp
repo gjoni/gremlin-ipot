@@ -19,7 +19,7 @@
 
 #define DMAX 5.0
 #define KMIN 3
-#define VERSION "V20180206"
+#define VERSION "V20180208"
 
 struct OPTS {
 	std::string seq; /* sequence file */
@@ -31,6 +31,7 @@ struct OPTS {
 	std::string prefix; /* prefix to output matches */
 	unsigned num; /* number of models to save */
 	int nthreads; /* number of threads to use */
+	double tmmax; /* TM-score cut-off for cleaning of top matches */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
@@ -48,7 +49,8 @@ MP_RESULT Align(const CMap&, const OPTS&, const MapAlign::PARAMS& params,
 
 bool compare(const std::pair<std::string, MP_RESULT> &a,
 		const std::pair<std::string, MP_RESULT> &b) {
-	return (a.second.sco[0] > b.second.sco[0]);
+	return (a.second.sco[0] + a.second.sco[1]
+			> b.second.sco[0] + b.second.sco[1]);
 }
 
 int main(int argc, char *argv[]) {
@@ -119,9 +121,10 @@ int main(int argc, char *argv[]) {
 	std::vector<std::pair<std::string, MP_RESULT> > hits;
 
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic) num_threads(opts.nthreads)
 #endif
 	for (unsigned i = 0; i < listB.size(); i++) {
+
 		MP_RESULT result = Align(mapA, opts, params, listB[i]);
 
 #if defined(_OPENMP)
@@ -141,12 +144,13 @@ int main(int argc, char *argv[]) {
 			} else {
 				printf("# %10s %15s\n", listB[i].c_str(), "...skipped...");
 			}
+			fflush(stdout);
 		}
 
 	}
 
 	/*
-	 * (4) save top hits
+	 * (5) save top hits
 	 */
 	if (opts.num) {
 
@@ -159,7 +163,20 @@ int main(int argc, char *argv[]) {
 		 * contact_score + gap_score */
 		std::sort(hits.begin(), hits.end(), compare);
 
-		/* print info about topN matches */
+		/*
+		 * clean based on TM-score
+		 */
+		// TODO: implement
+//		if (opts.tmmax < 1.0) {
+//			std::vector<std::pair<std::string, MP_RESULT> > hits_tmp;
+//			std::vector<Chain> chains;
+//			for (unsigned i = 0; i < opts.num) {
+//
+//			}
+//		}
+		/*
+		 * print info about topN matches
+		 */
 		for (unsigned i = 0; i < opts.num; i++) {
 			std::string &id = hits[i].first;
 			MP_RESULT &result = hits[i].second;
@@ -172,7 +189,7 @@ int main(int argc, char *argv[]) {
 			}
 			printf("\n");
 
-			/* save partial matches (if requested) */
+			/* save partial matches (if requested by user) */
 			if (opts.prefix != "") {
 				std::string name = opts.dir + "/" + id + ".pdb";
 				Chain B(name);
@@ -197,8 +214,9 @@ void PrintOpts(const OPTS &opts) {
 	printf("          ********** library of templates **********\n");
 	printf("          -D PATH_TO_TEMPLATES (input)\n");
 	printf("          -L list.txt (input)\n");
-	printf("          -O PREFIX for saving top hits (input)\n");
 	printf("          -N number of top hits to save (input)\n");
+	printf("          -O PREFIX for saving top hits (input)\n");
+	printf("          -T TM-score cleaning cut-off (input)\n");
 	printf("          -M max number of residues in the template\n\n");
 	printf("          ****************** misc ******************\n");
 	printf("          -t number of threads\n\n");
@@ -231,7 +249,7 @@ void PrintCap(const OPTS &opts) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hs:c:p:o:D:L:O:N:v:t:M:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hs:c:p:o:D:L:O:N:v:t:M:T:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -263,6 +281,9 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 			break;
 		case 't': /* number of threads */
 			opts.nthreads = atoi(optarg);
+			break;
+		case 'T': /* TM-score clustering cut-off */
+			opts.tmmax = atof(optarg);
 			break;
 		default:
 			return false;
@@ -334,7 +355,8 @@ CMap MapFromPDB(const Chain &C) {
 	AListT adj(C.nRes);
 	for (int i = 0; i < C.nRes; i++) {
 		for (int j = 0; j < C.nRes; j++) {
-			int sep = abs(i - j);
+			//int sep = abs(i - j);
+			int sep = abs(C.residue[i].seqNum - C.residue[j].seqNum);
 			if (sep < KMIN) {
 				continue;
 			}
@@ -379,6 +401,9 @@ void SaveMatch(std::string name, const Chain& C, const std::vector<int>& a2b,
 		int idx = a2b[i];
 		if (idx > -1) {
 			Residue &R = C.residue[idx];
+			if (R.N == NULL || R.CA == NULL || R.O == NULL) {
+				continue;
+			}
 			SaveAtom(F, R.N, i * 4 + 1, i + 1, seq[i]);
 			SaveAtom(F, R.CA, i * 4 + 2, i + 1, seq[i]);
 			SaveAtom(F, R.C, i * 4 + 3, i + 1, seq[i]);
