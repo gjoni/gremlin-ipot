@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string>
 #include <algorithm>
+#include <ctime>
 
 #include <omp.h>
 
@@ -158,11 +159,9 @@ int main(int argc, char *argv[]) {
 	printf("# %s\n", std::string(70, '-').c_str());
 	printf("# %20s : %d\n", "skipped", nskipped);
 
-
 	/*
 	 * (4) process top hits
 	 */
-
 
 	/* make sure that topN results exist */
 	opts.num = hits.size() < opts.num ? hits.size() : opts.num;
@@ -258,6 +257,18 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	/*
+	 * (5) finish date/time
+	 */
+	time_t timer;
+	time(&timer);
+	struct tm* tm_info = localtime(&timer);
+	char buf[100];
+	strftime(buf, 26, "%Y:%m:%d / %H:%M:%S", tm_info);
+	printf("# %s\n", std::string(70, '-').c_str());
+	printf("# %20s : %s\n", "end date/time", buf);
+	printf("# %s\n", std::string(70, '-').c_str());
+
 	return 0;
 
 }
@@ -286,11 +297,18 @@ void PrintOpts(const OPTS &opts) {
 
 void PrintCap(const OPTS &opts) {
 
+	time_t timer;
+	time(&timer);
+	struct tm* tm_info = localtime(&timer);
+	char buf[100];
+	strftime(buf, 26, "%Y:%m:%d / %H:%M:%S", tm_info);
+
 	printf("# %s\n", std::string(70, '-').c_str());
 	printf("# map_align - a program to align protein contact maps %18s\n",
 	VERSION);
 	printf("# %s\n", std::string(70, '-').c_str());
 
+	printf("# %20s : %s\n", "start date/time", buf);
 	printf("# %20s : %s\n", "sequence file", opts.seq.c_str());
 	printf("# %20s : %s\n", "contacts file", opts.con.c_str());
 	printf("# %20s : %s\n", "list file", opts.list.c_str());
@@ -526,6 +544,7 @@ double TMscore(const Chain& A, const Chain& B, const std::vector<int>& a2ref,
 			y[dim][2] = B.residue[idxb].CA->z;
 
 			dim++;
+
 		}
 
 		dimA += (idxa > -1);
