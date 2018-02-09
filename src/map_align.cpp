@@ -16,6 +16,7 @@
 #include "Info.h"
 #include "CMap.h"
 #include "MapAlign.h"
+#include "TMalign.h"
 
 #define DMAX 5.0
 #define KMIN 3
@@ -32,6 +33,7 @@ struct OPTS {
 	unsigned num; /* number of models to save */
 	int nthreads; /* number of threads to use */
 	double tmmax; /* TM-score cut-off for cleaning of top matches */
+	int maxres; /* max template size */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
@@ -47,6 +49,9 @@ void SaveAtom(FILE *F, Atom *A, int atomNum, int resNum, char type);
 MP_RESULT Align(const CMap&, const OPTS&, const MapAlign::PARAMS& params,
 		const std::string&);
 
+double TMscore(const Chain&, const Chain&, const std::vector<int>&,
+		const std::vector<int>&);
+
 bool compare(const std::pair<std::string, MP_RESULT> &a,
 		const std::pair<std::string, MP_RESULT> &b) {
 	return (a.second.sco[0] + a.second.sco[1]
@@ -58,7 +63,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { "", "", "", "", "", "", "", 0, 1 };
+	OPTS opts = { "", "", "", "", "", "", "", 10, 1, 0.8, 1000 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -150,52 +155,96 @@ int main(int argc, char *argv[]) {
 	}
 
 	/*
-	 * (5) save top hits
+	 * (4) process top hits
 	 */
-	if (opts.num) {
 
-		printf("# %s\n", std::string(70, '-').c_str());
+	printf("# %s\n", std::string(70, '-').c_str());
 
-		/* make sure that topN results exist */
-		opts.num = hits.size() < opts.num ? hits.size() : opts.num;
+	/* make sure that topN results exist */
+	opts.num = hits.size() < opts.num ? hits.size() : opts.num;
 
-		/* sort in decreasing order of
-		 * contact_score + gap_score */
-		std::sort(hits.begin(), hits.end(), compare);
+	/* sort in decreasing order of
+	 * contact_score + gap_score */
+	std::sort(hits.begin(), hits.end(), compare);
 
-		/*
-		 * clean based on TM-score
-		 */
-		// TODO: implement
-//		if (opts.tmmax < 1.0) {
-//			std::vector<std::pair<std::string, MP_RESULT> > hits_tmp;
-//			std::vector<Chain> chains;
-//			for (unsigned i = 0; i < opts.num) {
-//
-//			}
-//		}
-		/*
-		 * print info about topN matches
-		 */
-		for (unsigned i = 0; i < opts.num; i++) {
-			std::string &id = hits[i].first;
-			MP_RESULT &result = hits[i].second;
-			printf("T %10s %15s", id.c_str(), result.label.c_str());
-			for (auto &s : result.sco) {
-				printf(" %10.3f", s);
+	/* store info about top hits in these vectors */
+	std::vector<Chain> chains;
+	std::vector<std::pair<std::string, MP_RESULT> > top_hits;
+
+	/*
+	 * (4a) clean based on TM-score
+	 */
+
+	/* clean top hits by TM-score only if requested by user
+	 * (and cut-off is reasonable) */
+	if (opts.tmmax < 1.0 && opts.tmmax > 0.1) {
+
+		/* loop over all hits */
+		for (auto &result : hits) {
+
+			/* load template */
+			Chain B(opts.dir + "/" + result.first.c_str() + ".pdb");
+			std::vector<int> &b2ref = result.second.a2b;
+
+			/* check whether current template is similar
+			 * to any of the already processed templates */
+			bool fl = 1;
+			for (unsigned i = 0; i < chains.size(); i++) {
+				Chain &C = chains[i];
+				std::vector<int> &c2ref = top_hits[i].second.a2b;
+				double tm = TMscore(B, C, b2ref, c2ref);
+				if (tm > opts.tmmax) {
+					fl = 0;
+					break;
+				}
 			}
-			for (auto &s : result.len) {
-				printf(" %5d", s);
-			}
-			printf("\n");
 
-			/* save partial matches (if requested by user) */
-			if (opts.prefix != "") {
-				std::string name = opts.dir + "/" + id + ".pdb";
-				Chain B(name);
-				name = opts.prefix + id + ".pdb";
-				SaveMatch(name, B, result.a2b, seqA);
+			/* save this hit if no similarity to
+			 * previous hits detected */
+			if (fl) {
+				chains.push_back(B);
+				top_hits.push_back(result);
 			}
+
+			/* stop if enough hits collected */
+			if (chains.size() >= opts.num) {
+				break;
+			}
+		}
+
+	} else {
+
+		/* process topN hits without clustering */
+		top_hits.assign(hits.begin(), hits.begin() + opts.num);
+		for (auto &result : top_hits) {
+			std::string &id = result.first;
+			chains.push_back(Chain(opts.dir + "/" + id.c_str() + ".pdb"));
+		}
+
+	}
+
+	/*
+	 * (4b) print info about topN matches
+	 */
+
+	/* make sure that topN results exist after clustering */
+	opts.num = top_hits.size() < opts.num ? top_hits.size() : opts.num;
+
+	for (unsigned i = 0; i < opts.num; i++) {
+		std::string &id = hits[i].first;
+		MP_RESULT &result = hits[i].second;
+		printf("T %10s %15s", id.c_str(), result.label.c_str());
+		for (auto &s : result.sco) {
+			printf(" %10.3f", s);
+		}
+		for (auto &l : result.len) {
+			printf(" %5d", l);
+		}
+		printf("\n");
+
+		/* save partial matches (if requested by user) */
+		if (opts.prefix != "") {
+			SaveMatch(opts.prefix + id + ".pdb", chains[i], result.a2b, seqA);
 		}
 	}
 
@@ -206,20 +255,22 @@ int main(int argc, char *argv[]) {
 void PrintOpts(const OPTS &opts) {
 
 	printf("\nUsage:   ./map_align [-option] [argument]\n\n");
-	printf("Options:  -s sequence.fas (input, required)\n");
-	printf("          -c contacts.txt (input, required)\n\n");
-	printf("          ************* single template ************\n");
-	printf("          -p template.pdb (input)\n");
-	printf("          -o match.pdb (output)\n\n");
-	printf("          ********** library of templates **********\n");
-	printf("          -D PATH_TO_TEMPLATES (input)\n");
-	printf("          -L list.txt (input)\n");
-	printf("          -N number of top hits to save (input)\n");
-	printf("          -O PREFIX for saving top hits (input)\n");
-	printf("          -T TM-score cleaning cut-off (input)\n");
-	printf("          -M max number of residues in the template\n\n");
-	printf("          ****************** misc ******************\n");
-	printf("          -t number of threads\n\n");
+	printf("Options:  -s sequence.fas                - input, required\n");
+	printf("          -c contacts.txt                - input, required\n\n");
+	printf("          ***************** single template ****************\n");
+	printf("          -p template.pdb                - input, required\n");
+	printf("          -o match.pdb                   - output, optional\n\n");
+	printf("                                  OR                        \n");
+	printf("          ************** library of templates **************\n");
+	printf("          -D path to templates           - input, required\n");
+	printf("          -L list.txt with template IDs  - input, required\n");
+	printf("          -O prefix for saving top hits  - output, optional\n");
+	printf("          -N number of top hits to save    (%u)\n", opts.num);
+	printf("          -T TM-score cleaning cut-off     (%.2f)\n", opts.tmmax);
+	printf("          -M max template size             (%d)\n\n", opts.maxres);
+	printf("          ********************** misc **********************\n");
+	printf("          -t number of threads             (%d)\n", opts.nthreads);
+	printf("\n");
 
 }
 
@@ -235,6 +286,7 @@ void PrintCap(const OPTS &opts) {
 	printf("# %20s : %s\n", "list file", opts.list.c_str());
 	printf("# %20s : %s\n", "path to templates", opts.dir.c_str());
 	printf("# %20s : %d\n", "threads", opts.nthreads);
+	printf("# %20s : %.3f\n", "TM-score cut-off", opts.tmmax);
 
 	printf("# %s\n", std::string(70, '-').c_str());
 
@@ -283,6 +335,9 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 			opts.nthreads = atoi(optarg);
 			break;
 		case 'T': /* TM-score clustering cut-off */
+			opts.tmmax = atof(optarg);
+			break;
+		case 'M': /* max template size */
 			opts.tmmax = atof(optarg);
 			break;
 		default:
@@ -421,11 +476,68 @@ MP_RESULT Align(const CMap& mapA, const OPTS& opts,
 	std::string name = opts.dir + "/" + id + ".pdb";
 	Chain B(name);
 	MP_RESULT result;
-	if (B.nRes > 20 && B.nRes < 1000) {
+	if (B.nRes > 20 && B.nRes < opts.maxres) {
 		CMap mapB = MapFromPDB(B);
 		result = MapAlign::Align(mapA, mapB, params);
 	}
 
 	return result;
+
+}
+
+double TMscore(const Chain& A, const Chain& B, const std::vector<int>& a2ref,
+		const std::vector<int>& b2ref) {
+
+	/* allocate memory */
+	unsigned dim = a2ref.size();
+	double **x = (double**) malloc(dim * sizeof(double*));
+	double **y = (double**) malloc(dim * sizeof(double*));
+	for (unsigned i = 0; i < dim; i++) {
+		x[i] = (double*) malloc(3 * sizeof(double));
+		y[i] = (double*) malloc(3 * sizeof(double));
+	}
+
+	/* get aligned residues */
+	dim = 0;
+	unsigned dimA = 0, dimB = 0;
+	for (unsigned i = 0; i < a2ref.size(); i++) {
+
+		int idxa = a2ref[i];
+		int idxb = b2ref[i];
+
+		if (idxa > -1 && idxb > -1) {
+
+			x[dim][0] = A.residue[idxa].CA->x;
+			x[dim][1] = A.residue[idxa].CA->y;
+			x[dim][2] = A.residue[idxa].CA->z;
+
+			y[dim][0] = B.residue[idxb].CA->x;
+			y[dim][1] = B.residue[idxb].CA->y;
+			y[dim][2] = B.residue[idxb].CA->z;
+
+			dim++;
+		}
+
+		dimA += (idxa > -1);
+		dimB += (idxb > -1);
+
+	}
+
+	double tm = 0.0;
+	if (dim >= 5) {
+		TMalign TM;
+		tm = TM.GetTMscore(x, y, dim);
+		tm = tm * dim / std::min(dimA, dimB);
+	}
+
+	/* free */
+	for (unsigned i = 0; i < a2ref.size(); i++) {
+		free(x[i]);
+		free(y[i]);
+	}
+	free(x);
+	free(y);
+
+	return tm;
 
 }

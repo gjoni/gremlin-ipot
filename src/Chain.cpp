@@ -262,8 +262,8 @@ AtomRecord Chain::ReadAtomRecord(char* str) {
 	AtomRecord A;
 
 	/* complete string to 80 characters */
-	char *pch = strpbrk(str, "\n\0");
-	if (pch - str < 80) {
+	char *pch = strpbrk(str, "\0\n");
+	if (pch != NULL && pch - str < 80) {
 		while (pch != str + 80) {
 			*pch++ = ' ';
 		}
