@@ -20,7 +20,7 @@
 
 #define DMAX 5.0
 #define KMIN 3
-#define VERSION "V20180208"
+#define VERSION "V20180209"
 
 struct OPTS {
 	std::string seq; /* sequence file */
@@ -124,6 +124,7 @@ int main(int argc, char *argv[]) {
 
 	/* read PDBs one by one and calculate alignments */
 	std::vector<std::pair<std::string, MP_RESULT> > hits;
+	int nskipped = 0;
 
 #if defined(_OPENMP)
 #pragma omp parallel for schedule(dynamic) num_threads(opts.nthreads)
@@ -148,17 +149,20 @@ int main(int argc, char *argv[]) {
 				hits.push_back(std::make_pair(listB[i], result));
 			} else {
 				printf("# %10s %15s\n", listB[i].c_str(), "...skipped...");
+				nskipped++;
 			}
 			fflush(stdout);
 		}
 
 	}
+	printf("# %s\n", std::string(70, '-').c_str());
+	printf("# %20s : %d\n", "skipped", nskipped);
+
 
 	/*
 	 * (4) process top hits
 	 */
 
-	printf("# %s\n", std::string(70, '-').c_str());
 
 	/* make sure that topN results exist */
 	opts.num = hits.size() < opts.num ? hits.size() : opts.num;
@@ -180,6 +184,7 @@ int main(int argc, char *argv[]) {
 	if (opts.tmmax < 1.0 && opts.tmmax > 0.1) {
 
 		/* loop over all hits */
+		int counter = 0;
 		for (auto &result : hits) {
 
 			/* load template */
@@ -204,6 +209,8 @@ int main(int argc, char *argv[]) {
 			if (fl) {
 				chains.push_back(B);
 				top_hits.push_back(result);
+			} else {
+				counter++;
 			}
 
 			/* stop if enough hits collected */
@@ -211,6 +218,9 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
+
+		printf("# %20s : %d\n", "similarities", counter);
+		printf("# %s\n", std::string(70, '-').c_str());
 
 	} else {
 
@@ -231,8 +241,8 @@ int main(int argc, char *argv[]) {
 	opts.num = top_hits.size() < opts.num ? top_hits.size() : opts.num;
 
 	for (unsigned i = 0; i < opts.num; i++) {
-		std::string &id = hits[i].first;
-		MP_RESULT &result = hits[i].second;
+		std::string &id = top_hits[i].first;
+		MP_RESULT &result = top_hits[i].second;
 		printf("T %10s %15s", id.c_str(), result.label.c_str());
 		for (auto &s : result.sco) {
 			printf(" %10.3f", s);
@@ -456,7 +466,7 @@ void SaveMatch(std::string name, const Chain& C, const std::vector<int>& a2b,
 		int idx = a2b[i];
 		if (idx > -1) {
 			Residue &R = C.residue[idx];
-			if (R.N == NULL || R.CA == NULL || R.O == NULL) {
+			if (R.N == NULL || R.C == NULL || R.O == NULL) {
 				continue;
 			}
 			SaveAtom(F, R.N, i * 4 + 1, i + 1, seq[i]);
