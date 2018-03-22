@@ -11,6 +11,7 @@ Experimental GREMLIN version with residue pair preferences from [1] and RRCE sta
 * hide masking/unmasking options
 * separate program for Neff calculation
 * map_align input
+* clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 
 ## Installation
 
