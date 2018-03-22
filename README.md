@@ -10,10 +10,11 @@ Experimental GREMLIN version with residue pair preferences from [1] and RRCE sta
 * (+) remove lpair/lskew options
 * (+) hide masking/unmasking options
 * separate program for Neff calculation
-* map_align input
-* clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
+* generate map_align input
+* (*) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 * do we really need FN correction? hide it?
 * matrix output after APC (for bbcontacts)
+* add ./example
 
 ## Installation
 
