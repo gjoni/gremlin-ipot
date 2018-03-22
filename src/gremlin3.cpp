@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	ProblemFull P(MSA);
-//	ProblemFullOMP P(MSA);
+//	ProblemFull P(MSA);
+	ProblemFullOMP P(MSA);
 
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();

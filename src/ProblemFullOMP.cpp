@@ -11,6 +11,8 @@
 
 #include "ProblemFullOMP.h"
 
+#include <omp.h>
+
 ProblemFullOMP::ProblemFullOMP() :
 		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0) {
 
@@ -170,11 +172,17 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 	double *g2 = g + dim1body;
 
 	/* set fx and gradient to 0 initially */
-	*f = 0.0;
+	double fx = 0.0;
 	memset(g, 0, sizeof(double) * dim);
 
 	/* aux array to store asymmetric 2-body gradient */
 	double *gaux = (double*) calloc(dim2body, sizeof(double));
+
+	/* aux arrays to store local partition functions
+	 * and Boltzmann factors separately for every sequence */
+	double *ea = (double*) malloc(nrow * NAA * ncol * sizeof(double));
+	double *lpa = (double*) calloc(nrow * ncol, sizeof(double));
+	double *pa = (double*) malloc(nrow * NAA * ncol * sizeof(double));
 
 	/* loop over all sequences in the MSA */
 #pragma omp parallel for
@@ -185,25 +193,16 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 
 		/* precomputed energies of every letter
 		 * at every position in the sequence */
-		double *e = (double*) malloc(NAA * ncol * sizeof(double));
-		if (e == NULL) {
-			printf("Error: not enough memory\n");
-		}
+		double *e = ea + i * NAA * ncol;
 
 		/* logarithm of local partition functions
 		 * (aka one-site pseudo-log-likelihoods
 		 * or local free energies) */
-		double *lp = (double*) malloc(ncol * sizeof(double));
-		if (lp == NULL) {
-			printf("Error: not enough memory\n");
-		}
+		double *lp = lpa + i * ncol;
 
 		/* local probabilities of a every letter
 		 * at every position in the sequence*/
-		double *p = (double*) malloc(NAA * ncol * sizeof(double));
-		if (p == NULL) {
-			printf("Error: not enough memory\n");
-		}
+		double *p = pa + i * NAA * ncol;
 
 		/* initialize energies with local fields */
 		memcpy(e, x1, ncol * (NAA - 1) * sizeof(double));
@@ -221,7 +220,6 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		}
 
 		/* compute local partition functions */
-		memset(lp, 0, sizeof(double) * ncol);
 		for (size_t a = 0; a < NAA; a++) {
 			for (size_t s = 0; s < ncol; s++) {
 				lp[s] += exp(e[a * ncol + s]);
@@ -239,13 +237,29 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 			}
 		}
 
-		/* compute f and derivatives of h[] */
-#pragma omp critical
+	}
+
+	for (size_t i = 0; i < nrow; i++) {
+		double *lp = lpa + i * ncol;
+		double weight = MSA->weight[i];
+		unsigned char *seq = msa + i * ncol;
+		double *e = ea + i * NAA * ncol;
 		for (size_t k = 0; k < ncol; k++) {
+			fx += weight * (lp[k] - e[seq[k] * ncol + k]);
+		}
+	}
+
+	/* compute f and derivatives of h[] */
+#pragma omp parallel for
+	for (size_t k = 0; k < ncol; k++) {
+
+		for (size_t i = 0; i < nrow; i++) {
+
+			double weight = MSA->weight[i];
+			unsigned char *seq = msa + i * ncol;
+			double *p = pa + i * NAA * ncol;
 
 			unsigned char xik = seq[k];
-
-			*f += weight * (-e[xik * ncol + k] + lp[k]);
 
 			if (xik < NAA - 1) {
 				g1[xik * ncol + k] -= weight;
@@ -256,9 +270,16 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 			}
 
 		}
+	}
 
-		/* derivatives of J[][] */
-#pragma omp critical
+	/* derivatives of J[][] */
+//#pragma omp critical
+	for (size_t i = 0; i < nrow; i++) {
+		double weight = MSA->weight[i];
+		unsigned char *seq = msa + i * ncol;
+//		double *p = pa + i * NAA * ncol;
+
+#pragma omp parallel for
 		for (size_t k = 0; k < ncol; k++) {
 
 			double *gaux_p = gaux + (seq[k] * ncol + k) * NAA * ncol;
@@ -267,18 +288,16 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 				gaux_p[seq[j] * ncol + j] -= weight;
 			}
 
-			double *pp = p;
+			double *pp = pa + i * NAA * ncol;
 			for (size_t j = 0; j < NAA * ncol; j++) {
 				*gaux_p++ += weight * *pp++;
 			}
 
 		}
 
-		free(e);
-		free(lp);
-		free(p);
-
 	}
+
+	*f = fx;
 
 	/* make derivatives of J[][] symmetric -
 	 * add transposed onto untransposed */
@@ -304,17 +323,19 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 				g2[((b * ncol + k) * NAA + a) * ncol + k] = 0;
 
 				/* set gradient for masked edges to zero */
-				for (size_t j = 0; j < ncol; j++) {
-					if (we[k * ncol + j] == false) {
-						g2[((b * ncol + k) * NAA + a) * ncol + j] = 0.0;
-					}
-				}
-
+//				for (size_t j = 0; j < ncol; j++) {
+//					if (we[k * ncol + j] == false) {
+//						g2[((b * ncol + k) * NAA + a) * ncol + j] = 0.0;
+//					}
+//				}
 			}
 		}
 	}
 
 	free(gaux);
+	free(ea);
+	free(pa);
+	free(lpa);
 
 	double reg = 0.0;
 
