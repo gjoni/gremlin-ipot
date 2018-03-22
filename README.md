@@ -4,7 +4,7 @@ Experimental GREMLIN version with residue pair preferences from [1] and RRCE sta
 ## TODO
 
 * OpenMP parallelization
-* remove all GSL-related code
+* (+) remove all GSL-related code
 * generate Rosetta constraints
 * PROB8 - default correction
 * remove lpair/lskew options
