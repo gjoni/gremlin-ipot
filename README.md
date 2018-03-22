@@ -1,6 +1,17 @@
 # gremlin3
 Experimental GREMLIN version with residue pair preferences from [1] and RRCE statistical potentials [2]
 
+## TODO
+
+* OpenMP parallelization
+* remove all GSL-related code
+* generate Rosetta constraints
+* PROB8 - default correction
+* remove lpair/lskew options
+* hide masking/unmasking options
+* separate program for Neff calculation
+* map_align input
+
 ## Installation
 
 ### Download and compilation
@@ -23,5 +34,5 @@ Original GREMLIN2 protocol (aka plmDCA) is substantially adopted from the CCMpre
 
 [1] I Anishchenko, S Ovchinnikov, H Kamisetty, D Baker. Origins of coevolution between residues distant in protein 3D structures. (2017) 114(34):9122-7
 
-[2] I Anishchenko, PJ Kundrotas, IA Vakser. Contact energies in proteins and protein complexes inferred from the Potts model. (2017) In preparation
+[2] I Anishchenko, PJ Kundrotas, IA Vakser. Contact potential for structure prediction of proteins and protein complexes from Potts model. (2018) Submitted
 
