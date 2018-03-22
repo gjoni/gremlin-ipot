@@ -11,7 +11,7 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
-//#include "ProblemFullAsym.h"
+#include "ProblemFullOMP.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
@@ -105,6 +105,7 @@ int main(int argc, char *argv[]) {
 	 * (3) set up the problem
 	 */
 	ProblemFull P(MSA);
+//	ProblemFullOMP P(MSA);
 
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();

@@ -15,8 +15,8 @@ class MSAclass {
 
 	friend class ProblemBase;
 	friend class ProblemFull;
+	friend class ProblemFullOMP;
 	friend class ProblemFullAsym;
-	friend class ProblemRRCE;
 	friend class ProblemPNAS;
 	friend class MRFclass;
 

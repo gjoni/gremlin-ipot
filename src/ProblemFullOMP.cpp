@@ -1,25 +1,24 @@
 /*
- * ProblemFull.cpp
+ * ProblemFullOMPOMP.cpp
  *
- *  Created on: Jul 17, 2017
- *      Author: ivan
+ *  Created on: Mar 22, 2018
+ *      Author: aivan
  */
 
 #include <cstring>
 #include <cmath>
 #include <cassert>
 
-#include "ProblemFull.h"
-#include <omp.h>
+#include "ProblemFullOMP.h"
 
-ProblemFull::ProblemFull() :
+ProblemFullOMP::ProblemFullOMP() :
 		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0) {
 
 	/* nothing to be done */
 
 }
 
-ProblemFull::ProblemFull(const MSAclass &MSA_) :
+ProblemFullOMP::ProblemFullOMP(const MSAclass &MSA_) :
 		ProblemBase(MSA_) {
 
 	lsingle = 0.01;
@@ -31,7 +30,7 @@ ProblemFull::ProblemFull(const MSAclass &MSA_) :
 
 }
 
-ProblemFull::ProblemFull(const ProblemFull &source) :
+ProblemFullOMP::ProblemFullOMP(const ProblemFullOMP &source) :
 		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim1body(
 				source.dim1body), dim2body(source.dim2body) {
 
@@ -39,13 +38,13 @@ ProblemFull::ProblemFull(const ProblemFull &source) :
 
 }
 
-ProblemFull::~ProblemFull() {
+ProblemFullOMP::~ProblemFullOMP() {
 
 	/* */
 
 }
 
-ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
+ProblemFullOMP& ProblemFullOMP::operator=(const ProblemFullOMP &source) {
 
 	assert(this != &source); /* an attempt to assign Residue to itself */
 
@@ -65,52 +64,14 @@ ProblemFull& ProblemFull::operator=(const ProblemFull &source) {
 
 }
 
-/* alignment of variables
- *
- * local fields V={vi(AA)}, 1D array of (NAA x ncol) size
- * i - position in sequence, AA - amino acid identity
- *
- *    v0('A'), v1('A'), ..., vL-1('A'),
- *    v0('R'), v1('R'), ..., vL-1('R'),
- *    ...,
- *    v0('-'), v1('-'), ..., vL-1('-')
- *
- * TODO: ??? isn't it W={wi,j(AAj,AAi)} ???
- *
- * couplings W={wi,j(AAi,AAj)}, 1D array of (NAA * NAA * ncol * ncol) size
- * i,j - positions in sequence
- * AAi,AAj - amino acid identities at positions i,j
- *
- *    w0,0('A','A'), w0,1('A','A'), ..., w0,L-1('A','A'),
- *    w0,0('A','R'), w0,1('A','R'), ..., w0,L-1('A','R'),
- *    ...,
- *    w0,0('A','-'), w0,1('A','-'), ..., w0,L-1('A','-'),
- *
- *    w0,0('R','A'), w0,1('R','A'), ..., w0,L-1('R','A'),
- *    w0,0('R','R'), w0,1('R','R'), ..., w0,L-1('R','R'),
- *    ...,
- *    w0,0('R','-'), w0,1('R','-'), ..., w0,L-1('R','-'),
- *
- *    w0,0('-','A'), w0,1('-','A'), ..., w0,L-1('-','A'),
- *    w0,0('-','R'), w0,1('-','R'), ..., w0,L-1('-','R'),
- *    ...,
- *    w0,0('-','-'), w0,1('-','-'), ..., w0,L-1('-','-'),
- *
- *    w1,0('A','A'), w1,1('A','A'), ..., w1,L-1('A','A'),
- *    w1,0('A','R'), w1,1('A','R'), ..., w1,L-1('A','R'),
- *    ...,
- *    w1,0('A','-'), w1,1('A','-'), ..., w1,L-1('A','-'),
- *    ...
- */
-
-void ProblemFull::df(const double *x, double *g) {
+void ProblemFullOMP::df(const double *x, double *g) {
 
 	double f;
 	fdf(x, &f, g);
 
 }
 
-double ProblemFull::f(const double *x) {
+double ProblemFullOMP::f(const double *x) {
 
 	double f = 0.0;
 
@@ -196,7 +157,7 @@ double ProblemFull::f(const double *x) {
 
 }
 
-void ProblemFull::fdf(const double *x, double *f, double *g) {
+void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 
 	size_t ncol = MSA->ncol;
 	size_t nrow = MSA->nrow;
@@ -216,6 +177,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 	double *gaux = (double*) calloc(dim2body, sizeof(double));
 
 	/* loop over all sequences in the MSA */
+#pragma omp parallel for
 	for (size_t i = 0; i < nrow; i++) {
 
 		double weight = MSA->weight[i];
@@ -278,6 +240,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 
 		/* compute f and derivatives of h[] */
+#pragma omp critical
 		for (size_t k = 0; k < ncol; k++) {
 
 			unsigned char xik = seq[k];
@@ -295,6 +258,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 
 		/* derivatives of J[][] */
+#pragma omp critical
 		for (size_t k = 0; k < ncol; k++) {
 
 			double *gaux_p = gaux + (seq[k] * ncol + k) * NAA * ncol;
@@ -331,6 +295,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
+#pragma omp parallel for ordered
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {
@@ -351,33 +316,17 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 
 	free(gaux);
 
-	/* symmetrize 21x21 submatrices */
-//	for (size_t b = 0; b < NAA; b++) {
-//		for (size_t k = 0; k < ncol; k++) {
-//			for (size_t a = b + 1; a < NAA; a++) {
-//				for (size_t j = 0; j < ncol; j++) {
-//					double s =
-//							0.5
-//									* (g2[((b * ncol + k) * NAA + a) * ncol + j]
-//											+ g2[((a * ncol + k) * NAA + b)
-//													* ncol + j]);
-//					g2[((b * ncol + k) * NAA + a) * ncol + j] = s;
-//					g2[((a * ncol + k) * NAA + b) * ncol + j] = s;
-//				}
-//			}
-//
-//		}
-//	}
-
 	double reg = 0.0;
 
 	/* regularize h */
+#pragma omp parallel for ordered reduction (+:reg)
 	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 		g[v] += 2.0 * lsingle * x[v];
 	}
 
 	/* regularize J */
+#pragma omp parallel for ordered reduction (+:reg)
 	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 		g[v] += 2.0 * lpair * x[v];
@@ -387,7 +336,7 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 
 }
 
-void ProblemFull::GetMRFvector(const double *x, double *mrfx) {
+void ProblemFullOMP::GetMRFvector(const double *x, double *mrfx) {
 
 	memset(mrfx, 0, dim * sizeof(double));
 
