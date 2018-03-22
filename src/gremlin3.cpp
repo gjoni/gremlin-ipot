@@ -11,7 +11,7 @@
 
 #include "MSAclass.h"
 #include "ProblemFull.h"
-#include "ProblemFullAsym.h"
+//#include "ProblemFullAsym.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
@@ -28,8 +28,6 @@ struct OPTS {
 	char *mask;
 	char *umask;
 	int rmode; /* regularization mode */
-	double lpair;
-	double lskew;
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
@@ -43,7 +41,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 2, 0.2, 0.2 };
+	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 4 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -56,7 +54,7 @@ int main(int argc, char *argv[]) {
 	MSA.CleanMsa(opts.grow, opts.gcol);
 	MSA.Reweight();
 
-	/* temp storage for variour scores */
+	/* temp storage for various scores */
 	size_t ncol = MSA.GetNcol();
 	double **mtx = (double**) malloc(ncol * sizeof(double*));
 	for (size_t i = 0; i < ncol; i++) {
@@ -85,7 +83,6 @@ int main(int argc, char *argv[]) {
 //
 //	MSA.GxGy(mtx);
 //	Contacts.AddFeature("Gx+Gy", mtx);
-
 	/* statistical potential */
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
 	Contacts.AddFeature("RRCE", mtx);
@@ -296,20 +293,6 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				return false;
 			}
 			break;
-		case 'p': /* lpair - pair penalty (symmetric) */
-			opts.lpair = atof(optarg);
-			if (opts.lpair <= 0.0) {
-				printf("Error: 'lpair' should be positive (-p)\n");
-				return false;
-			}
-			break;
-		case 's': /* lskew - asymmetric penalty for couplings */
-			opts.lskew = atof(optarg);
-			if (opts.lskew <= 0.0) {
-				printf("Error: 'lskew' should be positive (-s)\n");
-				return false;
-			}
-			break;
 		default:
 			return false;
 			break;
@@ -334,13 +317,11 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -n number of iterations (%ld)\n", opts.niter);
 	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
 	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
-	printf("          -m list1.txt - residue pairs to be masked\n");
-	printf("          -u list2.txt - residue pairs to be unmasked "
-			"(all others are masked)\n");
+//	printf("          -m list1.txt - residue pairs to be masked\n");
+//	printf("          -u list2.txt - residue pairs to be unmasked "
+//			"(all others are masked)\n");
 	printf(
-			"          -R contact matrix correction {FN,APC,PROB5,PROB8} (APC)\n");
-	printf("          -p lpair\n");
-	printf("          -s lskew\n");
+			"          -R contact matrix correction {FN,APC,PROB5,PROB8} (PROB8)\n");
 
 }
 
