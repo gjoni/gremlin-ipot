@@ -15,9 +15,9 @@
 RRCE::RRCE(RRCE_TYPE type, double d, int k) :
 		h(NULL), J(NULL), dmax(d) {
 
-	char *DATADIR = getenv("TMDOCKDAT");
+	char *DATADIR = getenv("GREMLINDAT");
 	if (DATADIR == NULL) {
-		printf("Error: environment variable 'TMDOCKDAT' not set\n");
+		printf("Error: environment variable 'GREMLINDAT' not set\n");
 		exit(1);
 	}
 
