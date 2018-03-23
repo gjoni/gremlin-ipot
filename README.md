@@ -1,20 +1,20 @@
 # gremlin3
-Experimental GREMLIN version with residue pair preferences from [1] and RRCE statistical potentials [2]
+Experimental GREMLIN version with RRCE contact energies [2]
 
 ## TODO
 
+* generate Rosetta constraints - separate program
+* add ./example
+* ./scripts folder content is irrelevant
 * (+) OpenMP parallelization
 * (+) remove all GSL-related code
-* generate Rosetta constraints - separate program
 * (+) PROB8 - default correction
 * (+) remove lpair/lskew options
 * (+) hide masking/unmasking options
 * (+) separate program for Neff calculation
-* generate map_align input - separate program
 * (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 * (+) do we really need FN correction? hide it? HIDE!
 * (+) matrix output after APC (for bbcontacts)
-* add ./example
 
 ## Installation
 
