@@ -19,24 +19,41 @@ Experimental GREMLIN version with residue pair preferences from [1] and RRCE sta
 ## Installation
 
 ### Download and compilation
-    git clone https://github.com/gjoni/gremlin3
-    cd ./gremlin3
-    make
+```
+git clone https://github.com/gjoni/gremlin3
+cd ./gremlin3
+make
+```
 
-## Issues
+### Setup
+```
+export GREMLINDAT=${INSTALL_DIR}/data
+```
 
-* The program is not likely to work on 32bit machines; sse2 support is required
-* OpenMP support not tested
+## Usage
+```
+Usage:   ./gremlin3 [-option] [argument]
+
+Options:  -i alignment.a3m               - input, required
+          -o matrix.txt                  - output, optional
+          -b apcmatrix.txt               - output, optional
+          -n number of iterations          (50)
+          -r max gaps per row [0;1)        (0.25)
+          -c max gaps per column [0;1)     (0.25)
+          -R contact matrix correction
+             {FN,APC,PROB5,PROB8}          (PROB8)
+          -t number of threads             (1)
+
+```
 
 ## Acknowledgements
 
-This package uses L-BFGS minimizer by J.Nocedal and N.Okazaki available at https://github.com/chokkan/liblbfgs.
-
-Original GREMLIN2 protocol (aka plmDCA) is substantially adopted from the CCMpred package by J.Soeding group https://github.com/soedinglab/CCMpred.
+ - [L-BFGS minimizer](https://github.com/chokkan/liblbfgs) by J.Nocedal and N.Okazaki
+ - [ccmpred](https://github.com/soedinglab/CCMpred) by J.Soeding group
 
 ## References
 
-[1] I Anishchenko, S Ovchinnikov, H Kamisetty, D Baker. Origins of coevolution between residues distant in protein 3D structures. (2017) 114(34):9122-7
+[1] H Kamisetty, S Ovchinnikov, D Baker. Assessing the utility of coevolution-based residue-residue contact predictions in a sequence- and structure-rich era. PNAS (2013). 110:15674–9
 
 [2] I Anishchenko, PJ Kundrotas, IA Vakser. Contact potential for structure prediction of proteins and protein complexes from Potts model. (2018) Submitted
 
