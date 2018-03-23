@@ -13,7 +13,7 @@ Experimental GREMLIN version with residue pair preferences from [1] and RRCE sta
 * generate map_align input
 * (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 * (+) do we really need FN correction? hide it? HIDE!
-* matrix output after APC (for bbcontacts)
+* (+) matrix output after APC (for bbcontacts)
 * add ./example
 
 ## Installation

@@ -9,7 +9,6 @@
 #include <omp.h>
 
 #include "MSAclass.h"
-//#include "ProblemFull.h"
 #include "ProblemFullOMP.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
@@ -30,6 +29,7 @@ struct OPTS {
 	char *umask;
 	int rmode; /* regularization mode */
 	int nthreads; /* number of threads to use */
+	char *apc; /* APC-corrected contact map */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 4, 1 };
+	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 4, 1, NULL };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -141,6 +141,15 @@ int main(int argc, char *argv[]) {
 	 */
 	if (opts.mrf != NULL && opts.rmode > 0) {
 		MRF.Save(opts.mrf);
+	}
+
+	/* save APC-corrected contact map
+	 * (for bbcontacts) */
+	if (opts.apc != NULL) {
+		ContactList ContactsTmp(ncol);
+		MRFprocessor::APC(MRF, mtx);
+		ContactsTmp.AddFeature("APC", mtx);
+		ContactsTmp.SaveMTX(opts.apc, MSA);
 	}
 
 	/*
@@ -257,7 +266,7 @@ int main(int argc, char *argv[]) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:p:s:t:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:p:s:t:b:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -318,6 +327,9 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		case 't': /* number of threads to use */
 			opts.nthreads = atoi(optarg);
 			break;
+		case 'b': /* APC-corrected contact map (for bbconacts) */
+			opts.apc = optarg;
+			break;
 		default:
 			return false;
 			break;
@@ -338,6 +350,7 @@ void PrintOpts(const OPTS &opts) {
 	printf("\nUsage:   ./gremlin3 [-option] [argument]\n\n");
 	printf("Options:  -i alignment.a3m               - input, required\n");
 	printf("          -o matrix.txt                  - output, optional\n");
+	printf("          -b apcmatrix.txt               - output, optional\n");
 //	printf("          -f mrf.txt                     - output, optional\n");
 	printf("          -n number of iterations          (%ld)\n", opts.niter);
 	printf("          -r max gaps per row [0;1)        (%.2lf)\n", opts.grow);
