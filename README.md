@@ -3,7 +3,9 @@ Experimental GREMLIN version with RRCE contact energies [2]
 
 ## TODO
 
-* generate Rosetta constraints - separate program
+*  (+) generate Rosetta constraints - separate program
+* add some caption to restraints files
+* OMP support for Hxy, RRCE energies in gremlin
 * add ./example
 * ./scripts folder content is irrelevant
 * (+) OpenMP parallelization
