@@ -12,10 +12,10 @@ DEPS = $(shell find $(SRCDIR) -name '*.h')
 SRCS = $(shell find $(SRCDIR) -name '*.cpp')
 OBJS = $(patsubst $(SRCDIR)%.cpp, $(OBJDIR)%.o, $(SRCS))
 
-fo_gr3=obj/gremlin3c.o obj/map_align.o
+fo_gr3=obj/gremlin3c.o obj/neff.o
 fo_map=obj/gremlin3.o obj/gremlin3c.o
 
-all: $(OBJDIR) gremlin3
+all: $(OBJDIR) gremlin3 neff
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -23,9 +23,12 @@ $(OBJDIR):
 gremlin3: $(OBJS) $(DEPS)
 	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o gremlin3 $(filter-out $(fo_gr3), $(OBJS)) $(CXXLIBS)
 
+neff: $(DEPS)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o neff obj/neff.o obj/MSAclass.o $(CXXLIBS)
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c -o $@ $<
 
 clean:
-	rm $(OBJS) gremlin3
+	rm $(OBJS) gremlin3 neff
 	rmdir $(OBJDIR)

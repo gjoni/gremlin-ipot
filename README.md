@@ -5,12 +5,12 @@ Experimental GREMLIN version with residue pair preferences from [1] and RRCE sta
 
 * (+) OpenMP parallelization
 * (+) remove all GSL-related code
-* generate Rosetta constraints
+* generate Rosetta constraints - separate program
 * (+) PROB8 - default correction
 * (+) remove lpair/lskew options
 * (+) hide masking/unmasking options
-* separate program for Neff calculation
-* generate map_align input
+* (+) separate program for Neff calculation
+* generate map_align input - separate program
 * (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 * (+) do we really need FN correction? hide it? HIDE!
 * (+) matrix output after APC (for bbcontacts)
