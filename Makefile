@@ -7,28 +7,36 @@ LIBDIRS =
 
 OBJDIR = obj
 SRCDIR = src
+BINDIR = bin
 
 DEPS = $(shell find $(SRCDIR) -name '*.h')
 SRCS = $(shell find $(SRCDIR) -name '*.cpp')
 OBJS = $(patsubst $(SRCDIR)%.cpp, $(OBJDIR)%.o, $(SRCS))
 
-fo_gr3=obj/gremlin3c.o obj/neff.o
+fo_gr3=obj/gremlin3c.o obj/neff.o obj/rstgen.o
 fo_map=obj/gremlin3.o obj/gremlin3c.o
 
-all: $(OBJDIR) gremlin3 neff
+all: $(OBJDIR) $(BINDIR) gremlin3 neff rstgen
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-gremlin3: $(OBJS) $(DEPS)
-	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o gremlin3 $(filter-out $(fo_gr3), $(OBJS)) $(CXXLIBS)
+$(BINDIR):
+	mkdir -p $(BINDIR)
 
-neff: $(DEPS)
-	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o neff obj/neff.o obj/MSAclass.o $(CXXLIBS)
+gremlin3: $(OBJS) $(DEPS)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o $(BINDIR)/gremlin3 $(filter-out $(fo_gr3), $(OBJS)) $(CXXLIBS)
+
+neff: $(OBJS) $(DEPS)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o $(BINDIR)/neff obj/neff.o obj/MSAclass.o $(CXXLIBS)
+
+rstgen: $(OBJS) $(DEPS)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o $(BINDIR)/rstgen obj/rstgen.o $(CXXLIBS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c -o $@ $<
 
 clean:
-	rm $(OBJS) gremlin3 neff
+	rm $(OBJS) gremlin3 neff rstgen
 	rmdir $(OBJDIR)
+	rmdir $(BINDIR)
