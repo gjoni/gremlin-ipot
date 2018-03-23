@@ -68,6 +68,7 @@ public:
 	static void aatoi(unsigned char *str, size_t len);
 
 	MSAclass(const char *name);
+	MSAclass(const std::string&);
 	MSAclass(const MSAclass &source);
 	MSAclass();
 

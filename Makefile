@@ -31,7 +31,7 @@ neff: $(OBJS) $(DEPS)
 	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o $(BINDIR)/neff obj/neff.o obj/MSAclass.o $(CXXLIBS)
 
 rstgen: $(OBJS) $(DEPS)
-	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o $(BINDIR)/rstgen obj/rstgen.o $(CXXLIBS)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) $(LIBDIRS) -o $(BINDIR)/rstgen obj/rstgen.o obj/MSAclass.o $(CXXLIBS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c -o $@ $<

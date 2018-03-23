@@ -137,6 +137,11 @@ MSAclass::MSAclass(const char *name) :
 
 }
 
+MSAclass::MSAclass(const std::string &name) :
+		MSAclass(name.c_str()) {
+
+}
+
 MSAclass::MSAclass(const MSAclass &source) :
 		a3m(source.a3m), len_ref(source.len_ref), row_map(source.row_map), col_map(
 				source.col_map), a3m_to_msa(source.a3m_to_msa), nrow(
@@ -702,7 +707,6 @@ void MSAclass::Reweight(double t) {
 	size_t nij = nrow * (nrow + 1) / 2;
 
 	unsigned char *msa = GetMsa();
-
 
 #if defined(_OPENMP)
 #pragma omp parallel for
