@@ -37,6 +37,9 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c -o $@ $<
 
 clean:
-	rm $(OBJS) gremlin3 neff rstgen
+	rm $(OBJS)
+	rm $(BINDIR)/gremlin3
+	rm $(BINDIR)/neff
+	rm $(BINDIR)/rstgen
 	rmdir $(OBJDIR)
 	rmdir $(BINDIR)
