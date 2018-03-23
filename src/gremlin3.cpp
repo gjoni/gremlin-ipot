@@ -5,18 +5,19 @@
 #include <cmath>
 
 #include <string>
-#include <map>
-#include <vector>
-#include <utility>
+
+#include <omp.h>
 
 #include "MSAclass.h"
-#include "ProblemFull.h"
+//#include "ProblemFull.h"
 #include "ProblemFullOMP.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
 #include "RRCE.h"
 #include "LogRegCoeff.h"
+
+#define VERSION "V20180323"
 
 struct OPTS {
 	char *a3m; /* A3M file */
@@ -28,10 +29,12 @@ struct OPTS {
 	char *mask;
 	char *umask;
 	int rmode; /* regularization mode */
+	int nthreads; /* number of threads to use */
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
+void PrintCap(const OPTS &opts);
 
 double PairEnergies(const MSAclass &MSA, double **mtx);
 double PairEnergiesDI(const MSAclass &MSA, double **mtx);
@@ -41,11 +44,17 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 4 };
+	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 4, 1 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
 	}
+
+	PrintCap(opts);
+
+#if defined(_OPENMP)
+	omp_set_num_threads(opts.nthreads);
+#endif
 
 	/*
 	 * (1) read & clean MSA
@@ -142,68 +151,68 @@ int main(int argc, char *argv[]) {
 		printf("# Contact matrix correction: ZILCH\n");
 		break;
 	case 1:
-		printf("# Contact matrix correction: FN\n");
+		printf("# Contact matrix correction : FN\n");
 		MRFprocessor::FN(MRF, mtx);
 		Contacts.AddFeature("FN", mtx);
 		break;
 	case 2:
-		printf("# Contact matrix correction: APC\n");
+		printf("# Contact matrix correction : APC\n");
 		MRFprocessor::APC(MRF, mtx);
 		Contacts.AddFeature("APC", mtx);
 		break;
 	case 3:
-		printf("# Contact matrix correction: PROB5\n");
+		printf("# Contact matrix correction : PROB5\n");
 		MRFprocessor::APC(MRF, mtx);
 		MRFprocessor::Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
 		if (ncol < 100) {
-			printf("#          Coefficients set: 0..100\n");
+			printf("#          Coefficients set : 0..100\n");
 			Contacts.RescoreLogistic(coef5A_range1);
 		} else if (ncol >= 100 && ncol < 150) {
-			printf("#          Coefficients set: 100..150\n");
+			printf("#          Coefficients set : 100..150\n");
 			Contacts.RescoreLogistic(coef5A_range2);
 		} else if (ncol >= 150 && ncol < 200) {
-			printf("#          Coefficients set: 150..200\n");
+			printf("#          Coefficients set : 150..200\n");
 			Contacts.RescoreLogistic(coef5A_range3);
 		} else if (ncol >= 200 && ncol < 250) {
-			printf("#          Coefficients set: 200..250\n");
+			printf("#          Coefficients set : 200..250\n");
 			Contacts.RescoreLogistic(coef5A_range4);
 		} else if (ncol >= 250 && ncol < 300) {
-			printf("#          Coefficients set: 250..300\n");
+			printf("#          Coefficients set : 250..300\n");
 			Contacts.RescoreLogistic(coef5A_range5);
 		} else if (ncol >= 300 && ncol < 400) {
-			printf("#          Coefficients set: 300..400\n");
+			printf("#          Coefficients set : 300..400\n");
 			Contacts.RescoreLogistic(coef5A_range6);
 		} else {
-			printf("#          Coefficients set: 400..inf\n");
+			printf("#          Coefficients set : 400..inf\n");
 			Contacts.RescoreLogistic(coef5A_range7);
 		}
 		break;
 	case 4:
-		printf("# Contact matrix correction: PROB8\n");
+		printf("# Contact matrix correction : PROB8\n");
 		MRFprocessor::APC(MRF, mtx);
 		MRFprocessor::Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
 		if (ncol < 100) {
-			printf("#          Coefficients set: 0..100\n");
+			printf("#          Coefficients set : 0..100\n");
 			Contacts.RescoreLogistic(coef8A_range1);
 		} else if (ncol >= 100 && ncol < 150) {
-			printf("#          Coefficients set: 100..150\n");
+			printf("#          Coefficients set : 100..150\n");
 			Contacts.RescoreLogistic(coef8A_range2);
 		} else if (ncol >= 150 && ncol < 200) {
-			printf("#          Coefficients set: 150..200\n");
+			printf("#          Coefficients set : 150..200\n");
 			Contacts.RescoreLogistic(coef8A_range3);
 		} else if (ncol >= 200 && ncol < 250) {
-			printf("#          Coefficients set: 200..250\n");
+			printf("#          Coefficients set : 200..250\n");
 			Contacts.RescoreLogistic(coef8A_range4);
 		} else if (ncol >= 250 && ncol < 300) {
-			printf("#          Coefficients set: 250..300\n");
+			printf("#          Coefficients set : 250..300\n");
 			Contacts.RescoreLogistic(coef8A_range5);
 		} else if (ncol >= 300 && ncol < 400) {
-			printf("#          Coefficients set: 300..400\n");
+			printf("#          Coefficients set : 300..400\n");
 			Contacts.RescoreLogistic(coef8A_range6);
 		} else {
-			printf("#          Coefficients set: 400..inf\n");
+			printf("#          Coefficients set : 400..inf\n");
 			Contacts.RescoreLogistic(coef8A_range7);
 		}
 		break;
@@ -219,7 +228,19 @@ int main(int argc, char *argv[]) {
 		Contacts.SaveMTX(opts.mtx, MSA);
 	}
 
-	Contacts.Print(MSA);
+//	Contacts.Print(MSA);
+
+	/*
+	 * (8) finish date/time
+	 */
+	time_t timer;
+	time(&timer);
+	struct tm* tm_info = localtime(&timer);
+	char buf[100];
+	strftime(buf, 26, "%Y:%m:%d / %H:%M:%S", tm_info);
+	printf("# %s\n", std::string(70, '-').c_str());
+	printf("# %25s : %s\n", "end date/time", buf);
+	printf("# %s\n", std::string(70, '-').c_str());
 
 	/*
 	 * free
@@ -236,7 +257,7 @@ int main(int argc, char *argv[]) {
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:p:s:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:p:s:t:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -294,6 +315,9 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				return false;
 			}
 			break;
+		case 't': /* number of threads to use */
+			opts.nthreads = atoi(optarg);
+			break;
 		default:
 			return false;
 			break;
@@ -311,18 +335,52 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 void PrintOpts(const OPTS &opts) {
 
-	printf("Usage:   ./gremlin3 [-option] [argument]\n");
-	printf("Options:  -i alignment.a3m (input, required)\n");
-	printf("          -o matrix.txt (output)\n");
-	printf("          -f mrf.txt (output)\n");
-	printf("          -n number of iterations (%ld)\n", opts.niter);
-	printf("          -r gaps per row [0;1) (%.2lf)\n", opts.grow);
-	printf("          -c gaps per column [0;1) (%.2lf)\n", opts.gcol);
+	printf("\nUsage:   ./gremlin3 [-option] [argument]\n\n");
+	printf("Options:  -i alignment.a3m               - input, required\n");
+	printf("          -o matrix.txt                  - output, optional\n");
+//	printf("          -f mrf.txt                     - output, optional\n");
+	printf("          -n number of iterations          (%ld)\n", opts.niter);
+	printf("          -r max gaps per row [0;1)        (%.2lf)\n", opts.grow);
+	printf("          -c max gaps per column [0;1)     (%.2lf)\n", opts.gcol);
 //	printf("          -m list1.txt - residue pairs to be masked\n");
 //	printf("          -u list2.txt - residue pairs to be unmasked "
 //			"(all others are masked)\n");
-	printf(
-			"          -R contact matrix correction {FN,APC,PROB5,PROB8} (PROB8)\n");
+	printf("          -R contact matrix correction\n");
+	printf("             {FN,APC,PROB5,PROB8}          (PROB8)\n");
+	printf("          -t number of threads             (%d)\n", opts.nthreads);
+
+}
+
+void PrintCap(const OPTS &opts) {
+
+	time_t timer;
+	time(&timer);
+	struct tm* tm_info = localtime(&timer);
+	char buf[100];
+	strftime(buf, 26, "%Y:%m:%d / %H:%M:%S", tm_info);
+
+	printf("# %s\n", std::string(70, '-').c_str());
+	printf("# gremlin - a program to predict protein contact maps %18s\n",
+	VERSION);
+	printf("#           from multiple sequence alignments\n");
+	printf("# %s\n", std::string(70, '-').c_str());
+
+	printf("# %20s : %s\n", "start date/time", buf);
+	printf("# %20s : %s\n", "MSA file", opts.a3m);
+	if (opts.mtx != NULL) {
+		printf("# %20s : %s\n", "contact matrix", opts.mtx);
+	}
+	if (opts.mrf != NULL) {
+		printf("# %20s : %s\n", "MRF", opts.mrf);
+	}
+	printf("# %20s : %d\n", "threads", opts.nthreads);
+
+	printf("# %s\n", std::string(70, '-').c_str());
+
+//	printf("# %10s %15s %10s %10s %10s %10s %10s %10s %5s %5s %5s\n", "TMPLT",
+//			"best_params", "cont_sco", "gap_sco", "max_scoA", "max_scoB",
+//			"tot_scoA", "tot_scoB", "Nali", "lenA", "lenB");
+//	printf("#\n");
 
 }
 

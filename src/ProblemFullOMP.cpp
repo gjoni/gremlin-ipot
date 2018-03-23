@@ -205,21 +205,16 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 	double *g1 = g;
 	double *g2 = g + dim1body;
 
-	/* set fx and gradient to 0 initially */
+	/* set gradient to 0 */
 	memset(g, 0, sizeof(double) * dim);
-
-	/* aux array to store asymmetric 2-body gradient */
-//	double *gaux = (double*) calloc(dim2body, sizeof(double));
-	/* aux arrays to store local partition functions
-	 * and Boltzmann factors separately for every sequence */
-//	double *ea = (double*) malloc(nrow * NAA * ncol * sizeof(double));
-//	double *lpa = (double*) calloc(nrow * ncol, sizeof(double));
-//	double *pa = (double*) malloc(nrow * NAA * ncol * sizeof(double));
 	memset(gaux, 0, dim2body * sizeof(double));
+
 	memset(lpa, 0, nrow * ncol * sizeof(double));
 
 	/* loop over all sequences in the MSA */
+#if defined(_OPENMP)
 #pragma omp parallel for
+#endif
 	for (size_t i = 0; i < nrow; i++) {
 
 		unsigned char *seq = msa + i * ncol;
@@ -286,7 +281,9 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 	}
 
 	/* compute f and derivatives of h[] */
+#if defined(_OPENMP)
 #pragma omp parallel for
+#endif
 	for (size_t k = 0; k < ncol; k++) {
 
 		for (size_t i = 0; i < nrow; i++) {
@@ -312,7 +309,9 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		double weight = MSA->weight[i];
 		unsigned char *seq = msa + i * ncol;
 
+#if defined(_OPENMP)
 #pragma omp parallel for
+#endif
 		for (size_t k = 0; k < ncol; k++) {
 
 			double *gaux_p = gaux + (seq[k] * ncol + k) * NAA * ncol;
@@ -345,7 +344,9 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
+//#if defined(_OPENMP)
 //#pragma omp parallel for
+//#endif
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {
@@ -363,22 +364,23 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
-//	free(gaux);
-//	free(ea);
-//	free(pa);
-//	free(lpa);
-
 	double reg = 0.0;
 
 	/* regularize h */
+
+#if defined(_OPENMP)
 #pragma omp parallel for reduction (+:reg)
+#endif
 	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 		g[v] += 2.0 * lsingle * x[v];
 	}
 
 	/* regularize J */
+
+#if defined(_OPENMP)
 #pragma omp parallel for reduction (+:reg)
+#endif
 	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 		g[v] += 2.0 * lpair * x[v];

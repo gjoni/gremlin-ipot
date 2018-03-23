@@ -703,7 +703,10 @@ void MSAclass::Reweight(double t) {
 
 	unsigned char *msa = GetMsa();
 
+
+#if defined(_OPENMP)
 #pragma omp parallel for
+#endif
 	for (size_t ij = 0; ij < nij; ij++) {
 
 		// compute i and j from ij
