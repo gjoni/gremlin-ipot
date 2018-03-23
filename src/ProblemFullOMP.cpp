@@ -14,14 +14,15 @@
 #include <omp.h>
 
 ProblemFullOMP::ProblemFullOMP() :
-		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0) {
+		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0), gaux(
+		NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
 	/* nothing to be done */
 
 }
 
 ProblemFullOMP::ProblemFullOMP(const MSAclass &MSA_) :
-		ProblemBase(MSA_) {
+		ProblemBase(MSA_), gaux(NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
 	lsingle = 0.01;
 	lpair = 0.2 * (MSA->ncol - 1);
@@ -30,19 +31,45 @@ ProblemFullOMP::ProblemFullOMP(const MSAclass &MSA_) :
 	dim2body = MSA->ncol * MSAclass::NAA * MSA->ncol * MSAclass::NAA;
 	dim = dim1body + dim2body;
 
+	Allocate();
+
 }
 
 ProblemFullOMP::ProblemFullOMP(const ProblemFullOMP &source) :
 		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim1body(
-				source.dim1body), dim2body(source.dim2body) {
+				source.dim1body), dim2body(source.dim2body), gaux(NULL), ea(
+		NULL), pa(NULL), lpa(NULL) {
 
-	/* */
+	Allocate();
+
+	memcpy(gaux, source.gaux, dim2body * sizeof(double));
+	memcpy(ea, source.ea, MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
+	memcpy(pa, source.pa, MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
+	memcpy(lpa, source.lpa, MSA->nrow * MSA->ncol * sizeof(double));
 
 }
 
 ProblemFullOMP::~ProblemFullOMP() {
 
-	/* */
+	Free();
+
+}
+
+void ProblemFullOMP::Allocate() {
+
+	gaux = (double*) malloc(dim2body * sizeof(double));
+	ea = (double*) malloc(MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
+	pa = (double*) malloc(MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
+	lpa = (double*) malloc(MSA->nrow * MSA->ncol * sizeof(double));
+
+}
+
+void ProblemFullOMP::Free() {
+
+	free(gaux);
+	free(ea);
+	free(pa);
+	free(lpa);
 
 }
 
@@ -51,6 +78,7 @@ ProblemFullOMP& ProblemFullOMP::operator=(const ProblemFullOMP &source) {
 	assert(this != &source); /* an attempt to assign Residue to itself */
 
 	FreeBase();
+	Free();
 
 	dim = source.dim;
 	dim1body = source.dim1body;
@@ -59,8 +87,14 @@ ProblemFullOMP& ProblemFullOMP::operator=(const ProblemFullOMP &source) {
 	MSA = source.MSA;
 
 	AllocateBase();
+	Allocate();
 
 	memcpy(we, source.we, MSA->ncol * MSA->ncol * sizeof(double));
+
+	memcpy(gaux, source.gaux, dim2body * sizeof(double));
+	memcpy(ea, source.ea, MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
+	memcpy(pa, source.pa, MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
+	memcpy(lpa, source.lpa, MSA->nrow * MSA->ncol * sizeof(double));
 
 	return *this;
 
@@ -172,23 +206,22 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 	double *g2 = g + dim1body;
 
 	/* set fx and gradient to 0 initially */
-	double fx = 0.0;
 	memset(g, 0, sizeof(double) * dim);
 
 	/* aux array to store asymmetric 2-body gradient */
-	double *gaux = (double*) calloc(dim2body, sizeof(double));
-
+//	double *gaux = (double*) calloc(dim2body, sizeof(double));
 	/* aux arrays to store local partition functions
 	 * and Boltzmann factors separately for every sequence */
-	double *ea = (double*) malloc(nrow * NAA * ncol * sizeof(double));
-	double *lpa = (double*) calloc(nrow * ncol, sizeof(double));
-	double *pa = (double*) malloc(nrow * NAA * ncol * sizeof(double));
+//	double *ea = (double*) malloc(nrow * NAA * ncol * sizeof(double));
+//	double *lpa = (double*) calloc(nrow * ncol, sizeof(double));
+//	double *pa = (double*) malloc(nrow * NAA * ncol * sizeof(double));
+	memset(gaux, 0, dim2body * sizeof(double));
+	memset(lpa, 0, nrow * ncol * sizeof(double));
 
 	/* loop over all sequences in the MSA */
 #pragma omp parallel for
 	for (size_t i = 0; i < nrow; i++) {
 
-		double weight = MSA->weight[i];
 		unsigned char *seq = msa + i * ncol;
 
 		/* precomputed energies of every letter
@@ -239,13 +272,16 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 
 	}
 
-	for (size_t i = 0; i < nrow; i++) {
-		double *lp = lpa + i * ncol;
-		double weight = MSA->weight[i];
-		unsigned char *seq = msa + i * ncol;
-		double *e = ea + i * NAA * ncol;
-		for (size_t k = 0; k < ncol; k++) {
-			fx += weight * (lp[k] - e[seq[k] * ncol + k]);
+	/* compute objective function */
+	{
+		*f = 0.0;
+		double *lp = lpa;
+		unsigned char *s = msa;
+		for (size_t i = 0; i < nrow; i++) {
+			double *e = ea + i * NAA * ncol;
+			for (size_t k = 0; k < ncol; k++) {
+				*f += MSA->weight[i] * (*lp++ - e[*s++ * ncol + k]);
+			}
 		}
 	}
 
@@ -256,10 +292,8 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		for (size_t i = 0; i < nrow; i++) {
 
 			double weight = MSA->weight[i];
-			unsigned char *seq = msa + i * ncol;
 			double *p = pa + i * NAA * ncol;
-
-			unsigned char xik = seq[k];
+			unsigned char xik = (msa + i * ncol)[k];
 
 			if (xik < NAA - 1) {
 				g1[xik * ncol + k] -= weight;
@@ -273,11 +307,10 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 	}
 
 	/* derivatives of J[][] */
-//#pragma omp critical
 	for (size_t i = 0; i < nrow; i++) {
+
 		double weight = MSA->weight[i];
 		unsigned char *seq = msa + i * ncol;
-//		double *p = pa + i * NAA * ncol;
 
 #pragma omp parallel for
 		for (size_t k = 0; k < ncol; k++) {
@@ -297,8 +330,6 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 
 	}
 
-	*f = fx;
-
 	/* make derivatives of J[][] symmetric -
 	 * add transposed onto untransposed */
 	double *gaux_p = gaux;
@@ -314,7 +345,7 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
-#pragma omp parallel for ordered
+//#pragma omp parallel for
 	for (size_t b = 0; b < NAA; b++) {
 		for (size_t k = 0; k < ncol; k++) {
 			for (size_t a = 0; a < NAA; a++) {
@@ -332,22 +363,22 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
-	free(gaux);
-	free(ea);
-	free(pa);
-	free(lpa);
+//	free(gaux);
+//	free(ea);
+//	free(pa);
+//	free(lpa);
 
 	double reg = 0.0;
 
 	/* regularize h */
-#pragma omp parallel for ordered reduction (+:reg)
+#pragma omp parallel for reduction (+:reg)
 	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 		g[v] += 2.0 * lsingle * x[v];
 	}
 
 	/* regularize J */
-#pragma omp parallel for ordered reduction (+:reg)
+#pragma omp parallel for reduction (+:reg)
 	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 		g[v] += 2.0 * lpair * x[v];

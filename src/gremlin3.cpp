@@ -362,7 +362,7 @@ double PairEnergies(const MSAclass &MSA, double **mtx) {
 
 				double j = RRCE_.GetJij(a, b);
 				mtx[p][q] += j * w;
-				E += j;
+				E += j * w;
 
 			}
 
