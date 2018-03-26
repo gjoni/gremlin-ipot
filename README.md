@@ -3,11 +3,11 @@ Experimental GREMLIN version with RRCE contact energies [2]
 
 ## TODO
 
-*  (+) generate Rosetta constraints - separate program
 * add a caption to restraints files
 * OMP support for Hxy, RRCE energies in gremlin
 * add ./example
 * ./scripts folder content is irrelevant
+* (+) generate Rosetta constraints - separate program
 * (+) OpenMP parallelization
 * (+) remove all GSL-related code
 * (+) PROB8 - default correction
@@ -27,16 +27,18 @@ cd ./gremlin3
 make
 ```
 
+### Setup
+```
+export GREMLINDAT=${INSTALL_DIR}/data
+export PATH=${INSTALL_DIR}/bin:$PATH
+```
+
 ## Programs
 
 * `gremlin` - predict protein contact map from an MSA
 * `neff` - calculate effective number of sequences for an MSA
 * `rstgen` - generate restraints for Rosetta
 
-### Setup
-```
-export GREMLINDAT=${INSTALL_DIR}/data
-```
 
 ## Usage
 ```
@@ -52,6 +54,18 @@ Options:  -i alignment.a3m               - input, required
              {FN,APC,PROB5,PROB8}          (PROB8)
           -t number of threads             (1)
 
+```
+
+```
+Usage:   ./rstgen [-option] [argument]
+
+Options:  -i alignment.a3m               - input, required
+          -m matrix.txt                  - input, required
+          -o restraints.txt              - output, required
+          -t restraint type {SIG, BND}     SIG
+          -f fraction of top contacts      1.50 * Len
+          -p probability cutoff            0.95
+          -k sequence separation           3
 ```
 
 ## Acknowledgements
