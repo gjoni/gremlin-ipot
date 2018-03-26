@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
 		Contacts.SaveMTX(opts.mtx, MSA);
 	}
 
-//	Contacts.Print(MSA);
+	Contacts.Print(MSA);
 
 	/*
 	 * (8) finish date/time
@@ -352,15 +352,15 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -o matrix.txt                  - output, optional\n");
 	printf("          -b apcmatrix.txt               - output, optional\n");
 //	printf("          -f mrf.txt                     - output, optional\n");
-	printf("          -n number of iterations          (%ld)\n", opts.niter);
-	printf("          -r max gaps per row [0;1)        (%.2lf)\n", opts.grow);
-	printf("          -c max gaps per column [0;1)     (%.2lf)\n", opts.gcol);
+	printf("          -n number of iterations          %ld\n", opts.niter);
+	printf("          -r max gaps per row [0;1)        %.2lf\n", opts.grow);
+	printf("          -c max gaps per column [0;1)     %.2lf\n", opts.gcol);
 //	printf("          -m list1.txt - residue pairs to be masked\n");
 //	printf("          -u list2.txt - residue pairs to be unmasked "
 //			"(all others are masked)\n");
 	printf("          -R contact matrix correction\n");
-	printf("             {FN,APC,PROB5,PROB8}          (PROB8)\n");
-	printf("          -t number of threads             (%d)\n", opts.nthreads);
+	printf("             {FN,APC,PROB5,PROB8}          PROB8\n");
+	printf("          -t number of threads             %d\n", opts.nthreads);
 
 }
 
