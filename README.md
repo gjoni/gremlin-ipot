@@ -4,7 +4,7 @@ Experimental GREMLIN version with RRCE contact energies [2]
 ## TODO
 
 *  (+) generate Rosetta constraints - separate program
-* add some caption to restraints files
+* add a caption to restraints files
 * OMP support for Hxy, RRCE energies in gremlin
 * add ./example
 * ./scripts folder content is irrelevant
@@ -15,7 +15,7 @@ Experimental GREMLIN version with RRCE contact energies [2]
 * (+) hide masking/unmasking options
 * (+) separate program for Neff calculation
 * (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
-* (+) do we really need FN correction? hide it? HIDE!
+* (+) do we really need FN correction? hide it?
 * (+) matrix output after APC (for bbcontacts)
 
 ## Installation
@@ -26,6 +26,12 @@ git clone https://github.com/gjoni/gremlin3
 cd ./gremlin3
 make
 ```
+
+## Programs
+
+* `gremlin` - predict protein contact map from an MSA
+* `neff` - calculate effective number of sequences for an MSA
+* `rstgen` - generate restraints for Rosetta
 
 ### Setup
 ```
