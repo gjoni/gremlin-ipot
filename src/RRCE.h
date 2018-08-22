@@ -56,12 +56,12 @@ public:
 	void GetCouplings(double **J);
 	void GetFields(double *h);
 
-	double GetJij(size_t i, size_t j) {
+	double GetJij(size_t i, size_t j) const {
 		return J[i][j];
 	}
 	;
 
-	double GetHi(size_t i) {
+	double GetHi(size_t i) const {
 		return h[i];
 	}
 	;

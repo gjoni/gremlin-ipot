@@ -75,7 +75,7 @@ void ProblemFullOMP::Free() {
 
 ProblemFullOMP& ProblemFullOMP::operator=(const ProblemFullOMP &source) {
 
-	assert(this != &source); /* an attempt to assign Residue to itself */
+	assert(this != &source);
 
 	FreeBase();
 	Free();
@@ -119,6 +119,9 @@ double ProblemFullOMP::f(const double *x) {
 	const double *x2 = x + dim1body; /* couplings Wij */
 
 	/* loop over all sequences in the MSA */
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:f)
+#endif
 	for (size_t i = 0; i < nrow; i++) {
 
 		/* sequence weight */
@@ -127,7 +130,7 @@ double ProblemFullOMP::f(const double *x) {
 		/* current sequence */
 		unsigned char *seq = msa + i * ncol;
 
-		/* precomputed energies of every letter
+		/* precompute energies of every letter
 		 * at every position in the sequence */
 		double *e = (double*) malloc(NAA * ncol * sizeof(double));
 
@@ -179,10 +182,16 @@ double ProblemFullOMP::f(const double *x) {
 
 	/* regularization */
 	double reg = 0.0;
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
 	for (size_t v = 0; v < dim1body; v++) {
 		reg += lsingle * x[v] * x[v];
 	}
 
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
 	for (size_t v = dim1body; v < dim; v++) {
 		reg += 0.5 * lpair * x[v] * x[v];
 	}
@@ -219,7 +228,7 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 
 		unsigned char *seq = msa + i * ncol;
 
-		/* precomputed energies of every letter
+		/* precompute energies of every letter
 		 * at every position in the sequence */
 		double *e = ea + i * NAA * ncol;
 
@@ -299,7 +308,6 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 			for (size_t a = 0; a < NAA - 1; a++) {
 				g1[a * ncol + k] += weight * p[a * ncol + k];
 			}
-
 		}
 	}
 
