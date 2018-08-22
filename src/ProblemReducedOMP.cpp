@@ -1,5 +1,5 @@
 /*
- * ProblemFullOMPOMP.cpp
+ * ProblemReducedOMPOMP.cpp
  *
  *  Created on: Mar 22, 2018
  *      Author: aivan
@@ -9,11 +9,11 @@
 #include <cmath>
 #include <cassert>
 
-#include "ProblemFullOMP.h"
+#include "ProblemReducedOMP.h"
 
 #include <omp.h>
 
-ProblemFullOMP::ProblemFullOMP() :
+ProblemReducedOMP::ProblemReducedOMP() :
 		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0), gaux(
 		NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
@@ -21,7 +21,7 @@ ProblemFullOMP::ProblemFullOMP() :
 
 }
 
-ProblemFullOMP::ProblemFullOMP(const MSAclass &MSA_) :
+ProblemReducedOMP::ProblemReducedOMP(const MSAclass &MSA_) :
 		ProblemBase(MSA_), gaux(NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
 	lsingle = 0.01;
@@ -35,7 +35,7 @@ ProblemFullOMP::ProblemFullOMP(const MSAclass &MSA_) :
 
 }
 
-ProblemFullOMP::ProblemFullOMP(const ProblemFullOMP &source) :
+ProblemReducedOMP::ProblemReducedOMP(const ProblemReducedOMP &source) :
 		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim1body(
 				source.dim1body), dim2body(source.dim2body), gaux(NULL), ea(
 		NULL), pa(NULL), lpa(NULL) {
@@ -49,13 +49,13 @@ ProblemFullOMP::ProblemFullOMP(const ProblemFullOMP &source) :
 
 }
 
-ProblemFullOMP::~ProblemFullOMP() {
+ProblemReducedOMP::~ProblemReducedOMP() {
 
 	Free();
 
 }
 
-void ProblemFullOMP::Allocate() {
+void ProblemReducedOMP::Allocate() {
 
 	gaux = (double*) malloc(dim2body * sizeof(double));
 	ea = (double*) malloc(MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
@@ -64,7 +64,7 @@ void ProblemFullOMP::Allocate() {
 
 }
 
-void ProblemFullOMP::Free() {
+void ProblemReducedOMP::Free() {
 
 	free(gaux);
 	free(ea);
@@ -73,7 +73,8 @@ void ProblemFullOMP::Free() {
 
 }
 
-ProblemFullOMP& ProblemFullOMP::operator=(const ProblemFullOMP &source) {
+ProblemReducedOMP& ProblemReducedOMP::operator=(
+		const ProblemReducedOMP &source) {
 
 	assert(this != &source);
 
@@ -100,14 +101,14 @@ ProblemFullOMP& ProblemFullOMP::operator=(const ProblemFullOMP &source) {
 
 }
 
-void ProblemFullOMP::df(const double *x, double *g) {
+void ProblemReducedOMP::df(const double *x, double *g) {
 
 	double f;
 	fdf(x, &f, g);
 
 }
 
-double ProblemFullOMP::f(const double *x) {
+double ProblemReducedOMP::f(const double *x) {
 
 	double f = 0.0;
 
@@ -202,7 +203,7 @@ double ProblemFullOMP::f(const double *x) {
 
 }
 
-void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
+void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 
 	size_t ncol = MSA->ncol;
 	size_t nrow = MSA->nrow;
@@ -398,7 +399,7 @@ void ProblemFullOMP::fdf(const double *x, double *f, double *g) {
 
 }
 
-void ProblemFullOMP::GetMRFvector(const double *x, double *mrfx) {
+void ProblemReducedOMP::GetMRFvector(const double *x, double *mrfx) {
 
 	memset(mrfx, 0, dim * sizeof(double));
 
@@ -424,11 +425,5 @@ void ProblemFullOMP::GetMRFvector(const double *x, double *mrfx) {
 			}
 		}
 	}
-
-}
-
-size_t ProblemFullOMP::GetDim() {
-
-	return (dim1body + dim2body);
 
 }

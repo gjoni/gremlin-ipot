@@ -1,5 +1,5 @@
 /*
- * ProblemFullOMP.h
+ * ProblemReducedOMP.h
  *
  *  Created on: Mar 22, 2018
  *      Author: aivan
@@ -10,7 +10,7 @@
 
 #include "ProblemBase.h"
 
-class ProblemFullOMP: public ProblemBase {
+class ProblemReducedOMP: public ProblemBase {
 
 private:
 
@@ -33,21 +33,18 @@ private:
 
 public:
 
-	ProblemFullOMP();
-	ProblemFullOMP(const MSAclass &MSA);
-	ProblemFullOMP(const ProblemFullOMP &source);
-	~ProblemFullOMP();
+	ProblemReducedOMP();
+	ProblemReducedOMP(const MSAclass &MSA);
+	ProblemReducedOMP(const ProblemReducedOMP &source);
+	~ProblemReducedOMP();
 
-	ProblemFullOMP& operator=(const ProblemFullOMP &source);
+	ProblemReducedOMP& operator=(const ProblemReducedOMP &source);
 
 	double f(const double *x);
 	void df(const double *x, double *g);
 	void fdf(const double *x, double *f, double *g);
 
 	void GetMRFvector(const double *x, double *mrfx);
-
-//	size_t GetDim();
-
 };
 
 #endif /* PROBLEMFULLOMP_H_ */

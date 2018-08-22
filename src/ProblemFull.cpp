@@ -368,7 +368,6 @@ void ProblemFull::fdf(const double *x, double *f, double *g) {
 //
 //		}
 //	}
-
 	double reg = 0.0;
 
 	/* regularize h */
@@ -413,5 +412,11 @@ void ProblemFull::GetMRFvector(const double *x, double *mrfx) {
 			}
 		}
 	}
+
+}
+
+size_t ProblemFull::GetDim() {
+
+	return (dim1body + dim2body);
 
 }

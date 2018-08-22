@@ -30,8 +30,6 @@ protected:
 
 	size_t dim; /* problem dimension (number of variables) */
 
-	/* TODO: !!! does not belong to here !!! */
-//	double *w; /* sequence weights */
 	bool *we; /* for masking (2D array in 1D representation)*/
 
 	void AllocateBase();
@@ -51,6 +49,8 @@ public:
 	virtual void fdf(const double *x, double *f, double *g) = 0;
 
 	virtual void GetMRFvector(const double *x, double *mrfx) = 0;
+
+//	virtual size_t GetDim() = 0;
 
 	/*
 	 * residue indices are as in the REFERENCE sequence
