@@ -22,7 +22,7 @@ private:
 	size_t dim1body;
 	size_t dim2body;
 
-	/* */
+	/* arrays for storing temp vars */
 	double *gaux;
 	double *ea;
 	double *pa;
@@ -45,8 +45,6 @@ public:
 	void fdf(const double *x, double *f, double *g);
 
 	void GetMRFvector(const double *x, double *mrfx);
-
-	size_t GetDim();
 
 };
 

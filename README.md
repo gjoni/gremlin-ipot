@@ -17,6 +17,7 @@ Experimental GREMLIN version with RRCE contact energies [2]
 * (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 * (+) do we really need FN correction? hide it?
 * (+) matrix output after APC (for bbcontacts)
+* (-) ProblemReducedOMP needs testing for correctness
 
 ## Installation
 

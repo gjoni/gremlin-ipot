@@ -14,7 +14,8 @@
 #include <omp.h>
 
 ProblemReducedOMP::ProblemReducedOMP() :
-		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0), gaux(
+		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0), dim2reduced(
+				0), gaux(
 		NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
 	/* nothing to be done */
@@ -28,16 +29,27 @@ ProblemReducedOMP::ProblemReducedOMP(const MSAclass &MSA_) :
 	lpair = 0.2 * (MSA->ncol - 1);
 
 	dim1body = MSA->ncol * MSAclass::NAA;
-	dim2body = MSA->ncol * MSAclass::NAA * MSA->ncol * MSAclass::NAA;
-	dim = dim1body + dim2body;
+	dim2body = dim1body * dim1body;
+
+	dim2reduced = dim1body * (MSA->ncol - 1) * MSAclass::NAA / 2;
+
+	dim = dim1body + dim2reduced;
 
 	Allocate();
+
+	size_t ntemp = dim2body + 2 * MSA->nrow * MSA->NAA * MSA->ncol
+			+ MSA->nrow * MSA->ncol;
+
+	printf("#  vars to minimize: %lu (%.1fMB)\n", dim, 8.0 * dim / 1024 / 1024);
+	printf("#         temp vars: %lu (%.1fMB)\n", ntemp,
+			8.0 * ntemp / 1024 / 1024);
 
 }
 
 ProblemReducedOMP::ProblemReducedOMP(const ProblemReducedOMP &source) :
 		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim1body(
-				source.dim1body), dim2body(source.dim2body), gaux(NULL), ea(
+				source.dim1body), dim2body(source.dim2body), dim2reduced(
+				source.dim2reduced), gaux(NULL), ea(
 		NULL), pa(NULL), lpa(NULL) {
 
 	Allocate();
@@ -84,6 +96,7 @@ ProblemReducedOMP& ProblemReducedOMP::operator=(
 	dim = source.dim;
 	dim1body = source.dim1body;
 	dim2body = source.dim2body;
+	dim2reduced = source.dim2reduced;
 
 	MSA = source.MSA;
 
@@ -119,6 +132,24 @@ double ProblemReducedOMP::f(const double *x) {
 	const double *x1 = x; /* local fields Vi */
 	const double *x2 = x + dim1body; /* couplings Wij */
 
+	/* unroll 2-body terms into symmetric 2d matrix (redundant) */
+	memset(gaux, 0, dim2body * sizeof(double));
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+	for (size_t k = 0; k < ncol * (ncol - 1) / 2; k++) {
+		size_t i, j;
+		To2D(k, i, j);
+		const double *x2_k = x2 + k * NAA * NAA;
+		for (size_t a = 0; a < NAA; a++) {
+			for (size_t b = 0; b < NAA; b++) {
+				double v = *x2_k++;
+				gaux[((a * ncol + j) * NAA + b) * ncol + i] = v;
+				gaux[((b * ncol + i) * NAA + a) * ncol + j] = v;
+			}
+		}
+	}
+
 	/* loop over all sequences in the MSA */
 #if defined(_OPENMP)
 #pragma omp parallel for reduction (+:f)
@@ -152,7 +183,7 @@ double ProblemReducedOMP::f(const double *x) {
 			/* wp[] - array of interaction energies of res k
 			 * of identity seq[k] with all other positions
 			 * of varying identities*/
-			const double *wp = x2 + (seq[k] * ncol + k) * NAA * ncol;
+			const double *wp = gaux + (seq[k] * ncol + k) * NAA * ncol;
 			double *ep = e;
 			for (size_t j = 0; j < NAA * ncol; j++) {
 				*ep++ += *wp++;
@@ -193,8 +224,8 @@ double ProblemReducedOMP::f(const double *x) {
 #if defined(_OPENMP)
 #pragma omp parallel for reduction (+:reg)
 #endif
-	for (size_t v = dim1body; v < dim; v++) {
-		reg += 0.5 * lpair * x[v] * x[v];
+	for (size_t v = 0; v < dim2body; v++) {
+		reg += 0.5 * lpair * gaux[v] * gaux[v];
 	}
 
 	f += reg;
@@ -215,13 +246,28 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 	double *g1 = g;
 	double *g2 = g + dim1body;
 
-	/* set gradient to 0 */
-	memset(g, 0, sizeof(double) * dim);
-	memset(gaux, 0, dim2body * sizeof(double));
-
 	memset(lpa, 0, nrow * ncol * sizeof(double));
 
+	/* unroll 2-body terms into symmetric 2d matrix (redundant) */
+	memset(gaux, 0, dim2body * sizeof(double));
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+	for (size_t k = 0; k < ncol * (ncol - 1) / 2; k++) {
+		size_t i, j;
+		To2D(k, i, j);
+		const double *x2_k = x2 + k * NAA * NAA;
+		for (size_t a = 0; a < NAA; a++) {
+			for (size_t b = 0; b < NAA; b++) {
+				double v = *x2_k++;
+				gaux[((a * ncol + i) * NAA + b) * ncol + j] = v;
+				gaux[((b * ncol + j) * NAA + a) * ncol + i] = v;
+			}
+		}
+	}
+
 	/* loop over all sequences in the MSA */
+
 #if defined(_OPENMP)
 #pragma omp parallel for
 #endif
@@ -250,7 +296,7 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 
 		/* add interactions with all other positions */
 		for (size_t k = 0; k < ncol; k++) {
-			const double *wp = x2 + (seq[k] * ncol + k) * NAA * ncol;
+			const double *wp = gaux + (seq[k] * ncol + k) * NAA * ncol;
 			double *ep = e;
 			for (size_t j = 0; j < NAA * ncol; j++) {
 				*ep++ += *wp++;
@@ -279,16 +325,28 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 
 	/* compute objective function */
 	{
-		*f = 0.0;
-		double *lp = lpa;
-		unsigned char *s = msa;
+		double obj = 0;
+
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:obj)
+#endif
 		for (size_t i = 0; i < nrow; i++) {
+
+			double *lp = lpa + i * ncol;
+			unsigned char *s = msa + i * ncol;
 			double *e = ea + i * NAA * ncol;
+			double f = 0.0;
 			for (size_t k = 0; k < ncol; k++) {
-				*f += MSA->weight[i] * (*lp++ - e[*s++ * ncol + k]);
+				f += MSA->weight[i] * (*lp++ - e[*s++ * ncol + k]);
 			}
+			obj += f;
 		}
+		*f = obj;
 	}
+
+	/* set gradient to 0 */
+	memset(g, 0, sizeof(double) * dim);
+	memset(gaux, 0, dim2body * sizeof(double));
 
 	/* compute f and derivatives of h[] */
 #if defined(_OPENMP)
@@ -338,37 +396,21 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 
 	}
 
-	/* make derivatives of J[][] symmetric -
-	 * add transposed onto untransposed */
-	double *gaux_p = gaux;
-	double *g2_p = g2;
-	for (size_t b = 0; b < NAA; b++) {
-		for (size_t k = 0; k < ncol; k++) {
-			for (size_t a = 0; a < NAA; a++) {
-				for (size_t j = 0; j < ncol; j++) {
-					*g2_p++ = *gaux_p++
-							+ gaux[((a * ncol + j) * NAA + b) * ncol + k];
-				}
-			}
-		}
-	}
+	/* add transposed J[][] with untransposed and save
+	 * the upper triangle in g[]
+	 * (roll back to the reduced representation) */
 
-//#if defined(_OPENMP)
-//#pragma omp parallel for
-//#endif
-	for (size_t b = 0; b < NAA; b++) {
-		for (size_t k = 0; k < ncol; k++) {
-			for (size_t a = 0; a < NAA; a++) {
-
-				/* set gradients to zero for self-edges */
-				g2[((b * ncol + k) * NAA + a) * ncol + k] = 0;
-
-				/* set gradient for masked edges to zero */
-//				for (size_t j = 0; j < ncol; j++) {
-//					if (we[k * ncol + j] == false) {
-//						g2[((b * ncol + k) * NAA + a) * ncol + j] = 0.0;
-//					}
-//				}
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+	for (size_t k = 0; k < ncol * (ncol - 1) / 2; k++) {
+		size_t i, j;
+		To2D(k, i, j);
+		double *g2_k = g2 + k * NAA * NAA;
+		for (size_t a = 0; a < NAA; a++) {
+			for (size_t b = 0; b < NAA; b++) {
+				*g2_k++ = gaux[((a * ncol + i) * NAA + b) * ncol + j]
+						+ gaux[((b * ncol + j) * NAA + a) * ncol + i];
 			}
 		}
 	}
@@ -390,9 +432,9 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 #if defined(_OPENMP)
 #pragma omp parallel for reduction (+:reg)
 #endif
-	for (size_t v = dim1body; v < dim; v++) {
-		reg += 0.5 * lpair * x[v] * x[v];
-		g[v] += 2.0 * lpair * x[v];
+	for (size_t v = 0; v < dim2reduced; v++) {
+		reg += lpair * x2[v] * x2[v];
+		g2[v] += 2.0 * lpair * x2[v];
 	}
 
 	*f += reg;
@@ -401,7 +443,7 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 
 void ProblemReducedOMP::GetMRFvector(const double *x, double *mrfx) {
 
-	memset(mrfx, 0, dim * sizeof(double));
+	memset(mrfx, 0, (dim1body + dim2body) * sizeof(double));
 
 	size_t NAA = MSAclass::NAA;
 	size_t ncol = MSA->ncol;
@@ -413,23 +455,47 @@ void ProblemReducedOMP::GetMRFvector(const double *x, double *mrfx) {
 	}
 
 	double *J = mrfx + dim1body;
-	const double *x2 = x + dim1body;
 
-	for (size_t i = 0; i < ncol; i++) {
+	for (size_t k = 0; k < ncol * (ncol - 1) / 2; k++) {
+		size_t i, j;
+		To2D(k, i, j);
+		const double *x2_k = x + dim1body + k * NAA * NAA;
 		for (size_t a = 0; a < NAA; a++) {
-			for (size_t j = 0; j < ncol; j++) {
-				for (size_t b = 0; b < NAA; b++) {
-					J[(i * ncol + j) * NAA * NAA + a * NAA + b] = x2[((a * ncol
-							+ i) * NAA + b) * ncol + j];
-				}
+			for (size_t b = 0; b < NAA; b++) {
+				double v = *x2_k++;
+				J[(i * ncol + j) * NAA * NAA + a * NAA + b] = v;
+				J[(j * ncol + i) * NAA * NAA + b * NAA + a] = v;
 			}
 		}
 	}
 
 }
 
-size_t ProblemReducedOMP::GetDim() {
+size_t ProblemReducedOMP::To1D(size_t i, size_t j) {
 
-	return (dim1body + dim2body);
+	size_t n = MSA->ncol;
+
+	assert(i != j);
+
+	/* make sure i < j */
+	if (i > j) {
+		size_t tmp = j;
+		j = i;
+		i = tmp;
+	}
+
+// https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix
+	return (n * (n - 1) / 2) - (n - i) * ((n - i) - 1) / 2 + j - i - 1;
 
 }
+
+void ProblemReducedOMP::To2D(size_t k, size_t &i, size_t &j) {
+
+	size_t n = MSA->ncol;
+
+// https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix
+	i = n - 2 - floor(sqrt(-8 * k + 4 * n * (n - 1) - 7) / 2.0 - 0.5);
+	j = k + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2;
+
+}
+

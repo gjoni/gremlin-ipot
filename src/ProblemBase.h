@@ -50,8 +50,6 @@ public:
 
 	virtual void GetMRFvector(const double *x, double *mrfx) = 0;
 
-//	virtual size_t GetDim() = 0;
-
 	/*
 	 * residue indices are as in the REFERENCE sequence
 	 */

@@ -5,8 +5,8 @@
  *      Author: aivan
  */
 
-#ifndef PROBLEMFULLOMP_H_
-#define PROBLEMFULLOMP_H_
+#ifndef PROBLEMREDUCEDOMP_H_
+#define PROBLEMREDUCEDOMP_H_
 
 #include "ProblemBase.h"
 
@@ -21,8 +21,9 @@ private:
 	/* Vi and Wij dimensions */
 	size_t dim1body;
 	size_t dim2body;
+	size_t dim2reduced;
 
-	/* */
+	/* arrays for storing temp vars */
 	double *gaux;
 	double *ea;
 	double *pa;
@@ -30,6 +31,9 @@ private:
 
 	void Allocate();
 	void Free();
+
+	size_t To1D(size_t i, size_t j);
+	void To2D(size_t k, size_t &i, size_t &j);
 
 public:
 
@@ -46,8 +50,6 @@ public:
 
 	void GetMRFvector(const double *x, double *mrfx);
 
-	size_t GetDim();
-
 };
 
-#endif /* PROBLEMFULLOMP_H_ */
+#endif /* PROBLEMREDUCEDOMP_H_ */

@@ -29,6 +29,7 @@ ProblemFullOMP::ProblemFullOMP(const MSAclass &MSA_) :
 
 	dim1body = MSA->ncol * MSAclass::NAA;
 	dim2body = MSA->ncol * MSAclass::NAA * MSA->ncol * MSAclass::NAA;
+
 	dim = dim1body + dim2body;
 
 	Allocate();
@@ -427,8 +428,3 @@ void ProblemFullOMP::GetMRFvector(const double *x, double *mrfx) {
 
 }
 
-size_t ProblemFullOMP::GetDim() {
-
-	return (dim1body + dim2body);
-
-}

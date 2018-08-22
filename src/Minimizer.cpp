@@ -34,8 +34,6 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 		exit(1);
 	}
 
-	printf("# number of vars: %lu (%.1fMB)\n", dim, 8.0 * dim / 1024 / 1024);
-
 	lbfgsfloatval_t fx;
 	lbfgsfloatval_t *m_x = lbfgs_malloc(dim);
 
