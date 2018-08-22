@@ -46,7 +46,7 @@ public:
 
 	void GetMRFvector(const double *x, double *mrfx);
 
-//	size_t GetDim();
+	size_t GetDim();
 
 };
 

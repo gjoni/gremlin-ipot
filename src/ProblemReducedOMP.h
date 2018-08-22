@@ -45,6 +45,9 @@ public:
 	void fdf(const double *x, double *f, double *g);
 
 	void GetMRFvector(const double *x, double *mrfx);
+
+	size_t GetDim();
+
 };
 
 #endif /* PROBLEMFULLOMP_H_ */

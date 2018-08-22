@@ -427,3 +427,9 @@ void ProblemReducedOMP::GetMRFvector(const double *x, double *mrfx) {
 	}
 
 }
+
+size_t ProblemReducedOMP::GetDim() {
+
+	return (dim1body + dim2body);
+
+}
