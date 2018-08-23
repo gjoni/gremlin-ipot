@@ -18,6 +18,7 @@ Experimental GREMLIN version with RRCE contact energies [2]
 * (+) do we really need FN correction? hide it?
 * (+) matrix output after APC (for bbcontacts)
 * (-) ProblemReducedOMP needs testing for correctness
+* (-) Train 1-body first, then switch to 2-body
 
 ## Installation
 
@@ -73,12 +74,25 @@ Options:  -i alignment.a3m               - input, required
 
  - [L-BFGS minimizer](https://github.com/chokkan/liblbfgs) by J.Nocedal and N.Okazaki
  - [ccmpred](https://github.com/soedinglab/CCMpred) by J.Soeding group
+ - [iPot](https://github.com/gjoni/iPot) statistical potential
+
+## Links
+- [GREMLIN](http://gremlin.bakerlab.org/)
+- [Baker Lab](http://www.bakerlab.org/)
+- [Ovchinnikov Lab](http://site.solab.org/home)
+
 
 ## References
 
-[1] H Kamisetty, S Ovchinnikov, D Baker. Assessing the utility of coevolution-based residue-residue contact predictions in a sequence- and structure-rich era. PNAS (2013). 110:15674–9
+[1] H Kamisetty, S Ovchinnikov, D Baker. Assessing the utility of coevolution-based 
+residue-residue contact predictions in a sequence- and structure-rich era. 
+[PNAS (2013). 110:15674–9](https://doi.org/10.1073/pnas.1314045110)
 
-[2] I Anishchenko, PJ Kundrotas, IA Vakser. Contact potential for structure prediction of proteins and protein complexes from Potts model. (2018) Submitted
+[2] S Ovchinnikov, L Kinch, H Park, Y Liao, J Pei, DE Kim, H Kamisetty, NV Grishin, D Baker. 
+Large-scale determination of previously unsolved protein structures using evolutionary information. 
+[eLife (2015). 4:e09248](https://doi.org/10.7554/eLife.09248)
 
-[3] S Ovchinnikov, L Kinch, H Park, Y Liao, J Pei, DE Kim, H Kamisetty, NV Grishin, D Baker. Large-scale determination of previously unsolved protein structures using evolutionary information. eLife (2015). 4:e09248
+[3] I Anishchenko, PJ Kundrotas, IA Vakser. Contact potential for structure prediction 
+of proteins and protein complexes from Potts model. (2018) Biophys J.
+[DOI: 10.1016/j.bpj.2018.07.035](https://doi.org/10.1016/j.bpj.2018.07.035) 
 
