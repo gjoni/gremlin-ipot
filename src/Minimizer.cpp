@@ -56,7 +56,7 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 	param.epsilon = 1e-3;
 	param.m = 3;
 //	param.max_linesearch = 3;
-//	param.ftol = 0.5;
+//	param.gtol = 0.1;
 
 	int ret = lbfgs(dim, m_x, &fx, _evaluate, _progress, &P, &param);
 	printf("# L-BFGS optimization terminated with status code = %d", ret);
