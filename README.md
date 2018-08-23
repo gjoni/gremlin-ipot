@@ -17,8 +17,11 @@ Experimental GREMLIN version with RRCE contact energies [2]
 * (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
 * (+) do we really need FN correction? hide it?
 * (+) matrix output after APC (for bbcontacts)
+* (+) remove GREMLINDAT varibale (hard-code default RRCE table)
 * (-) ProblemReducedOMP needs testing for correctness
+* (-) allow for setting initial values for the Minimizer
 * (-) Train 1-body first, then switch to 2-body
+* (-) smooth L1 regularization
 
 ## Installation
 

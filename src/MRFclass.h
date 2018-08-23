@@ -66,21 +66,6 @@ public:
 	double GetPairEnergies(const unsigned char *msa, size_t nrow,
 			const std::vector<std::pair<size_t, size_t> > &contacts) const;
 
-	/*
-	 * scoring of a nonnative MSA
-	 */
-
-//	void SetNonnativeMSA(const MSAclass &MSA);
-	/* pair energy for two characters */
-//	double GetPairEnergy(unsigned char a, unsigned char b, size_t imrf,
-//			size_t jmrf) const;
-	/* intra, inter and total energies for a MSA patch */
-//	double GetPatchIntraEnergy(const MSAclass &MSA, size_t msabeg,
-//			size_t mrfbeg, size_t size) const;
-//	double GetPatchInterEnergy(const MSAclass &MSA, size_t msabeg,
-//			size_t mrfbeg, size_t size) const;
-//	double GetPatchTotalEnergy(const MSAclass &MSA, size_t msabeg,
-//			size_t mrfbeg, size_t size);
 };
 
 #endif /* MRFCLASS_H_ */

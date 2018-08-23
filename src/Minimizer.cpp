@@ -53,7 +53,6 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 	lbfgs_parameter_t param;
 	lbfgs_parameter_init(&param);
 	param.max_iterations = niter;
-	param.epsilon = 1e-3;
 	param.m = 3;
 //	param.max_linesearch = 3;
 //	param.gtol = 0.1;
@@ -65,6 +64,7 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 	}
 	printf("\n");
 
+	/* TODO: a lot of RAM overhead  -- simplify */
 	size_t dim_mrf = P.MSA->GetNcol() * MSAclass::NAA
 			* (1 + P.MSA->GetNcol() * MSAclass::NAA);
 	double *mrfx = (double*) malloc(dim_mrf * sizeof(double));

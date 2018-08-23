@@ -127,10 +127,16 @@ public:
 	void MI(double **mi) const;
 	void HxHy(double **hxhy) const; // H(x) + H(y)
 
+	/* TODO: do we need these functions ? */
 	void GxGy(double **gxgy); // Gap(x) + Gap(y)
 	void Gxy(double **gxy); // Gap(x && y);
 
 	double GetFi(size_t i, unsigned char a) const;
+
+	/* TODO: sequence similarity:
+	 *   0 - identity or
+	 *   1 - BLOSUM62 score */
+//	static double SeqID(const std::string &a, const std::string &b);
 
 };
 

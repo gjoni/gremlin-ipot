@@ -32,10 +32,14 @@ public:
 
 	static MRFclass MinimizeLBFGS(ProblemBase &P, int niter);
 
+	/* TODO: implement */
+//	static void MinimizeLBFGS(ProblemBase &P, int niter, MRFclass &MRF);
+
 	/* TODO: CG minimizer - more memory efficient */
 	// static MRFclass MinimizeCG(ProblemBase &P, int niter);
 
 	/* TODO: ADMM minimizer for L1 penalty */
+
 };
 
 #endif /* MINIMIZER_H_ */

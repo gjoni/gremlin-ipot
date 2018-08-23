@@ -11,6 +11,7 @@
 #include "ProblemFull.h"
 #include "ProblemFullOMP.h"
 #include "ProblemReducedOMP.h"
+#include "Problem1Body.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 #include "ContactList.h"
@@ -97,6 +98,7 @@ int main(int argc, char *argv[]) {
 //	ProblemFull P(MSA);
 //	ProblemFullOMP P(MSA);
 	ProblemReducedOMP P(MSA);
+//	Problem1Body P(MSA);
 
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
