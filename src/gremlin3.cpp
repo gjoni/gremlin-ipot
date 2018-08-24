@@ -95,7 +95,6 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-//	ProblemFull P(MSA);
 //	ProblemFullOMP P(MSA);
 	ProblemReducedOMP P(MSA);
 //	Problem1Body P(MSA);

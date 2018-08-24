@@ -1,5 +1,5 @@
 # gremlin3
-Experimental GREMLIN version with RRCE contact energies [2]
+Experimental GREMLIN version with RRCE contact energies [3]
 
 ## TODO
 
@@ -18,10 +18,11 @@ Experimental GREMLIN version with RRCE contact energies [2]
 * (+) do we really need FN correction? hide it?
 * (+) matrix output after APC (for bbcontacts)
 * (+) remove GREMLINDAT varibale (hard-code default RRCE table)
-* (-) ProblemReducedOMP needs testing for correctness
+* (+) ProblemReducedOMP needs testing for correctness
 * (-) allow for setting initial values for the Minimizer
 * (-) Train 1-body first, then switch to 2-body
 * (-) smooth L1 regularization
+* (-) move MRFprocessor function to MRFclass (leaving them static)
 
 ## Installation
 
@@ -30,12 +31,6 @@ Experimental GREMLIN version with RRCE contact energies [2]
 git clone https://github.com/gjoni/gremlin3
 cd ./gremlin3
 make
-```
-
-### Setup
-```
-export GREMLINDAT=${INSTALL_DIR}/data
-export PATH=${INSTALL_DIR}/bin:$PATH
 ```
 
 ## Programs
