@@ -28,15 +28,18 @@ private:
 	/* reference sequence length (1st sequence in the MSA) */
 	size_t len_ref;
 
-	size_t CleanLowercase(std::string &str); /* in-place removal of lowercase letters */
+	/* in-place removal of lowercase letters */
+	size_t CleanLowercase(std::string &str);
 
 	/* cleaned rows and columns */
 	std::vector<size_t> row_map; /* cleaned to reference */
 	std::vector<size_t> col_map; /* cleaned to reference */
+
+
 	std::vector<size_t> a3m_to_msa;
 
 	size_t CleanRows(double gaps_frac); /* sets row_map */
-	size_t CleanCols(double gaps_frac); /* sets col_map, ref_to_cleaned */
+	size_t CleanCols(double gaps_frac); /* sets col_map, a3m_to_msa */
 
 	/* size of the CLEANED alignment msa[] */
 	size_t nrow; // sequence length - 65536 MAX
