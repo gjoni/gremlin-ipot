@@ -14,14 +14,11 @@ class MRFclassNew {
 
 private:
 
-	/* MRF dimension (cleaned sequence length) */
+	/* MRF dimensions (cleaned sequence) */
 	size_t dim;
 	size_t nvar1b;
 	size_t nvar2b;
 
-	/* TODO: move this part to MSAclass */
-//	std::vector<size_t> mtx_to_a3m; /* size() = dim */
-//	std::vector<size_t> a3m_to_mtx; /* size() = len_ref */
 	/* MRF parameters: both h[] and J[][] */
 	double *x;
 
@@ -37,7 +34,7 @@ public:
 	MRFclassNew();
 	MRFclassNew(const MSAclass &MSA);
 	MRFclassNew(const MRFclassNew &source);
-//	MRFclassNew(const std::string &name);
+	MRFclassNew(const std::string &name);
 
 	~MRFclassNew();
 
@@ -47,7 +44,7 @@ public:
 
 	double* GetX() const;
 
-//	void SetMSA(const MSAclass &MSA);
+	void SetMSA(const MSAclass &MSA);
 
 	void Save(const std::string &name) const;
 
@@ -62,15 +59,16 @@ public:
 	static void APC(size_t dim, double **mtx);
 	static void Zscore(size_t dim, double **mtx);
 
+//	static void SaveMTX(size_t dim, double **mtx);
+//	static void SaveMTX(const MSAclass &MSA, double **mtx);
+
 	/*
 	 * FUNCTIONS TO SCORE SEQUENCES
 	 * BASED ON THE TRAINED MRF
 	 */
-	double E(const std::string &seq);
-
+//	double E(const std::string &seq);
 	/* mode = 1 - chainA, 2 - chainB, 12 - interchain */
-	double E(const std::string &seq, size_t shift, int mode = 12);
-
+//	double E(const std::string &seq, size_t shift, int mode = 12);
 };
 
 #endif /* MRFCLASSNEW_H_ */

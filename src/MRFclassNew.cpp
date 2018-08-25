@@ -39,6 +39,45 @@ MRFclassNew::MRFclassNew(const MRFclassNew &source) :
 
 }
 
+MRFclassNew::MRFclassNew(const std::string &name) :
+		dim(0), nvar1b(0), nvar2b(0), x(NULL), MSA(NULL) {
+
+	FILE *F = fopen(name.c_str(), "r");
+	if (F == NULL) {
+		printf("Error: cannot read MRF from file '%s'\n", name.c_str());
+		exit(1);
+	}
+
+	size_t NAA = MSAclass::NAA;
+
+	/* read dimensions */
+	fscanf(F, "%lu %lu %lu\n", &dim, &nvar1b, &nvar2b);
+
+	Allocate();
+
+	/* read fields */
+	for (size_t i = 0; i < dim; i++) {
+		fscanf(F, "%*s\n");
+		for (size_t a = 0; a < NAA; a++) {
+			fscanf(F, "%lf ", x + (i * NAA + a));
+		}
+	}
+
+	/* couplings */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			double *Jp = x + nvar1b + (i * dim + j) * NAA * NAA;
+			fscanf(F, "%*s\n");
+			for (size_t aa = 0; aa < NAA * NAA; aa++) {
+				fscanf(F, "%lf ", Jp++);
+			}
+		}
+	}
+
+	fclose(F);
+
+}
+
 MRFclassNew::~MRFclassNew() {
 
 	Free();
@@ -193,6 +232,14 @@ void MRFclassNew::Zscore(size_t dim, double **mtx) {
 			mtx[i][j] = mtx[j][i] = x;
 		}
 	}
+
+}
+
+void MRFclassNew::SetMSA(const MSAclass &MSA_) {
+
+	assert(MSA_.GetNcol() == dim);
+
+	MSA = &MSA_;
 
 }
 
