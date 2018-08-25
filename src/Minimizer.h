@@ -10,6 +10,7 @@
 
 #include "ProblemBase.h"
 #include "MRFclass.h"
+#include "MRFclassNew.h"
 
 #include "lbfgs.h"
 
@@ -32,8 +33,7 @@ public:
 
 	static MRFclass MinimizeLBFGS(ProblemBase &P, int niter);
 
-	/* TODO: implement */
-//	static void MinimizeLBFGS(ProblemBase &P, int niter, MRFclass &MRF);
+	static void MinimizeLBFGS(ProblemBase &P, int niter, MRFclassNew &MRF);
 
 	/* TODO: CG minimizer - more memory efficient */
 	// static MRFclass MinimizeCG(ProblemBase &P, int niter);

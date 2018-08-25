@@ -59,7 +59,8 @@ MRFclassNew::MRFclassNew(const std::string &name) :
 	for (size_t i = 0; i < dim; i++) {
 		fscanf(F, "%*s\n");
 		for (size_t a = 0; a < NAA; a++) {
-			fscanf(F, "%lf ", x + (i * NAA + a));
+//			fscanf(F, "%lf ", x + (i * NAA + a));
+			fscanf(F, "%lf ", x + (a * dim + i));
 		}
 	}
 
@@ -260,7 +261,8 @@ void MRFclassNew::Save(const std::string &name) const {
 	for (size_t i = 0; i < dim; i++) {
 		fprintf(F, "V[%ld]\n", i);
 		for (size_t a = 0; a < NAA; a++) {
-			fprintf(F, "%.5e ", x[i * NAA + a]);
+//			fprintf(F, "%.5e ", x[i * NAA + a]);
+			fprintf(F, "%.5e ", x[a * dim + i]);
 		}
 		fprintf(F, "\n");
 	}

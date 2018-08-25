@@ -11,8 +11,6 @@
 #include "lbfgs.h"
 
 #include "Minimizer.h"
-//#include "ProblemStatic.h"
-#include "MRFclass.h"
 
 Minimizer::Minimizer() {
 	// TODO Auto-generated constructor stub
@@ -58,7 +56,7 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 //	param.gtol = 0.1;
 
 	int ret = lbfgs(dim, m_x, &fx, _evaluate, _progress, &P, &param);
-	printf("# L-BFGS optimization terminated with status code = %d", ret);
+	printf("# L-BFGS termination code = %d", ret);
 	if (ret == -997) {
 		printf(" (LBFGSERR_MAXIMUMITERATION)");
 	}
@@ -75,6 +73,38 @@ MRFclass Minimizer::MinimizeLBFGS(ProblemBase &P, int niter) {
 	free(mrfx);
 
 	return MRF;
+
+}
+
+void Minimizer::MinimizeLBFGS(ProblemBase &P, int niter, MRFclassNew &MRF) {
+
+	assert(sizeof(double) == sizeof(lbfgsfloatval_t));
+
+	size_t dim = P.GetDim();
+
+	if (!dim) {
+		printf("Error: cannot run Gremlin for an empty MSA\n");
+		exit(1);
+	}
+
+	lbfgsfloatval_t fx;
+	lbfgsfloatval_t *x = MRF.GetX();
+
+	printf("# %-8s%-14s%-14s%-14s%-8s%-12s\n", "iter", "f(x)", "||x||", "||g||",
+			"neval", "epsilon");
+
+	/* TODO: skip for speed */
+//	printf("# %-8d%-12.5e\n", 0, P.f(x));
+
+	lbfgs_parameter_t param;
+	lbfgs_parameter_init(&param);
+
+	/* custom params */
+	param.max_iterations = niter;
+	param.m = 3;
+
+	int ret = lbfgs(dim, x, &fx, _evaluate, _progress, &P, &param);
+	printf("# L-BFGS termination code = %d\n", ret);
 
 }
 

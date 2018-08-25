@@ -40,6 +40,7 @@ ProblemReducedOMP::ProblemReducedOMP(const MSAclass &MSA_) :
 	size_t ntemp = dim2body + 2 * MSA->nrow * MSA->NAA * MSA->ncol
 			+ MSA->nrow * MSA->ncol;
 
+	/* TODO: remove from here */
 	printf("#  vars to minimize: %lu (%.1fMB)\n", dim, 8.0 * dim / 1024 / 1024);
 	printf("#         temp vars: %lu (%.1fMB)\n", ntemp,
 			8.0 * ntemp / 1024 / 1024);
@@ -348,7 +349,7 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 	memset(g, 0, sizeof(double) * dim);
 	memset(gaux, 0, dim2body * sizeof(double));
 
-	/* compute f and derivatives of h[] */
+	/* compute derivatives of h[] */
 #if defined(_OPENMP)
 #pragma omp parallel for
 #endif

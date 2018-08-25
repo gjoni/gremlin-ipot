@@ -19,10 +19,13 @@ Experimental GREMLIN version with RRCE contact energies [3]
 * (+) matrix output after APC (for bbcontacts)
 * (+) remove GREMLINDAT varibale (hard-code default RRCE table)
 * (+) ProblemReducedOMP needs testing for correctness
-* (-) allow for setting initial values for the Minimizer
-* (-) Train 1-body first, then switch to 2-body
-* (-) smooth L1 regularization
-* (-) move MRFprocessor function to MRFclass (leaving them static)
+* (-) get rid of masking/unmasking options in gremlin3
+* (-) allow for setting initial values for the Minimizer (new MRF class)
+* (-) move MRFprocessor functions to the new MRFclass, get rid of MRFprocessor
+* (-) train 1-body first, then switch to 2-body
+* (-) ProblemReducedOMP --> ProblemL2
+* (-) ProblemSmoothL1 (child of ProblemL2)
+* (-) MI+APC correction
 
 ## Installation
 
@@ -91,6 +94,6 @@ Large-scale determination of previously unsolved protein structures using evolut
 [eLife (2015). 4:e09248](https://doi.org/10.7554/eLife.09248)
 
 [3] I Anishchenko, PJ Kundrotas, IA Vakser. Contact potential for structure prediction 
-of proteins and protein complexes from Potts model. (2018) Biophys J.
-[DOI: 10.1016/j.bpj.2018.07.035](https://doi.org/10.1016/j.bpj.2018.07.035) 
+of proteins and protein complexes from Potts model. (2018) Biophys J. 
+[DOI: 10.1016/j.bpj.2018.07.035](https://doi.org/10.1016/j.bpj.2018.07.035)
 

@@ -8,7 +8,6 @@
 #include <omp.h>
 
 #include "MSAclass.h"
-#include "ProblemFull.h"
 #include "ProblemFullOMP.h"
 #include "ProblemReducedOMP.h"
 #include "Problem1Body.h"
@@ -18,6 +17,8 @@
 #include "RRCE.h"
 #include "LogRegCoeff.h"
 #include "Options.h"
+
+#include "MRFclassNew.h"
 
 double PairEnergies(const MSAclass &MSA, double **mtx);
 
@@ -68,12 +69,7 @@ int main(int argc, char *argv[]) {
 	MSA.HxHy(mtx);
 	Contacts.AddFeature("Hx+Hy", mtx);
 
-	/* gaps */
-//	MSA.Gxy(mtx);
-//	Contacts.AddFeature("Gxy", mtx);
-//
-//	MSA.GxGy(mtx);
-//	Contacts.AddFeature("Gx+Gy", mtx);
+	/* TODO: move down, after minimization */
 	/* statistical potential */
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
 	Contacts.AddFeature("RRCE", mtx);
@@ -97,7 +93,12 @@ int main(int argc, char *argv[]) {
 	 */
 //	ProblemFullOMP P(MSA);
 	ProblemReducedOMP P(MSA);
-//	Problem1Body P(MSA);
+	Problem1Body P1(MSA);
+
+	MRFclassNew MRF_(MSA);
+	Minimizer::MinimizeLBFGS(P1, opts.niter, MRF_);
+	Minimizer::MinimizeLBFGS(P, opts.niter, MRF_);
+	exit(1);
 
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
