@@ -115,10 +115,54 @@ ProblemReducedOMP& ProblemReducedOMP::operator=(
 
 }
 
-void ProblemReducedOMP::df(const double *x, double *g) {
+double ProblemReducedOMP::Reg_f(const double *x) {
 
-	double f;
-	fdf(x, &f, g);
+	double reg = 0.0;
+
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
+	for (size_t v = 0; v < dim1body; v++) {
+		reg += lsingle * x[v] * x[v];
+	}
+
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
+	for (size_t v = 0; v < dim2body; v++) {
+		reg += 0.5 * lpair * gaux[v] * gaux[v];
+	}
+
+	return reg;
+
+}
+
+double ProblemReducedOMP::Reg_fdf(const double *x, double *g) {
+
+	double reg = 0.0;
+
+	const double *x2 = x + dim1body;
+	double *g2 = g + dim1body;
+
+	/* regularize h */
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
+	for (size_t v = 0; v < dim1body; v++) {
+		reg += lsingle * x[v] * x[v];
+		g[v] += 2.0 * lsingle * x[v];
+	}
+
+	/* regularize J */
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
+	for (size_t v = 0; v < dim2reduced; v++) {
+		reg += lpair * x2[v] * x2[v];
+		g2[v] += 2.0 * lpair * x2[v];
+	}
+
+	return reg;
 
 }
 
@@ -213,23 +257,8 @@ double ProblemReducedOMP::f(const double *x) {
 
 	}
 
-	/* regularization */
-	double reg = 0.0;
-#if defined(_OPENMP)
-#pragma omp parallel for reduction (+:reg)
-#endif
-	for (size_t v = 0; v < dim1body; v++) {
-		reg += lsingle * x[v] * x[v];
-	}
-
-#if defined(_OPENMP)
-#pragma omp parallel for reduction (+:reg)
-#endif
-	for (size_t v = 0; v < dim2body; v++) {
-		reg += 0.5 * lpair * gaux[v] * gaux[v];
-	}
-
-	f += reg;
+	/* regularize */
+	f += Reg_f(x);
 
 	return f;
 
@@ -416,29 +445,15 @@ void ProblemReducedOMP::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
-	double reg = 0.0;
+	/* regularize */
+	*f += Reg_fdf(x, g);
 
-	/* regularize h */
+}
 
-#if defined(_OPENMP)
-#pragma omp parallel for reduction (+:reg)
-#endif
-	for (size_t v = 0; v < dim1body; v++) {
-		reg += lsingle * x[v] * x[v];
-		g[v] += 2.0 * lsingle * x[v];
-	}
+void ProblemReducedOMP::df(const double *x, double *g) {
 
-	/* regularize J */
-
-#if defined(_OPENMP)
-#pragma omp parallel for reduction (+:reg)
-#endif
-	for (size_t v = 0; v < dim2reduced; v++) {
-		reg += lpair * x2[v] * x2[v];
-		g2[v] += 2.0 * lpair * x2[v];
-	}
-
-	*f += reg;
+	double f;
+	fdf(x, &f, g);
 
 }
 

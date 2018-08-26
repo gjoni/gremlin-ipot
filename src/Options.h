@@ -19,8 +19,6 @@ struct OPTS {
 	size_t niter; /* number of iterations */
 	double grow; /* gaps per row */
 	double gcol; /* gaps per col */
-	char *mask;
-	char *umask;
 	int rmode; /* regularization mode */
 	int nthreads; /* number of threads to use */
 	char *apc; /* APC-corrected contact map */
@@ -29,8 +27,5 @@ struct OPTS {
 bool GetOpts(int argc, char *argv[], OPTS &opts);
 void PrintOpts(const OPTS &opts);
 void PrintCap(const OPTS &opts);
-
-
-
 
 #endif /* OPTIONS_H_ */

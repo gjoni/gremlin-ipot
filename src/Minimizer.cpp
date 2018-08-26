@@ -93,9 +93,6 @@ void Minimizer::MinimizeLBFGS(ProblemBase &P, int niter, MRFclassNew &MRF) {
 	printf("# %-8s%-14s%-14s%-14s%-8s%-12s\n", "iter", "f(x)", "||x||", "||g||",
 			"neval", "epsilon");
 
-	/* TODO: skip for speed */
-//	printf("# %-8d%-12.5e\n", 0, P.f(x));
-
 	lbfgs_parameter_t param;
 	lbfgs_parameter_init(&param);
 

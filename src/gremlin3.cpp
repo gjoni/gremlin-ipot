@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, NULL, NULL, 4, 1, NULL };
+	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, 4, 1, NULL };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -75,46 +75,30 @@ int main(int argc, char *argv[]) {
 	Contacts.AddFeature("RRCE", mtx);
 
 	/*
-	 * (3) read edge constraints
-	 */
-	EDGE_LIST L;
-	if (opts.mask != NULL) {
-		L = ReadEdges(opts.mask);
-	} else if (opts.umask != NULL) {
-		L = ReadEdges(opts.umask);
-	}
-	for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-		printf("# %lu edges in group '%s'\n", it->second.size(),
-				it->first.c_str());
-	}
-
-	/*
 	 * (3) set up the problem
 	 */
-//	ProblemFullOMP P(MSA);
-	ProblemReducedOMP P(MSA);
-	Problem1Body P1(MSA);
-
 	MRFclassNew MRF_(MSA);
-	Minimizer::MinimizeLBFGS(P1, opts.niter, MRF_);
-	Minimizer::MinimizeLBFGS(P, opts.niter, MRF_);
-	exit(1);
-
-	if (opts.mask != NULL) {
-		P.UnmaskAllEdges();
-		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-			P.MaskEdges(it->second);
-		}
-	} else if (opts.umask != NULL) {
-		P.MaskAllEdges();
-		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-			P.UnmaskEdges(it->second);
-		}
+	{
+		printf("# %s\n", std::string(70, '-').c_str());
+		printf("# step 1: solve for local fields\n");
+		printf("# %s\n", std::string(70, '-').c_str());
+		Problem1Body P1(MSA);
+		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF_);
 	}
+
+	{
+		printf("# %s\n", std::string(70, '-').c_str());
+		printf("# step 2: solve for local fields and couplings\n");
+		printf("# %s\n", std::string(70, '-').c_str());
+		ProblemReducedOMP P(MSA);
+		Minimizer::MinimizeLBFGS(P, opts.niter, MRF_);
+	}
+	exit(1);
 
 	/*
 	 * (4) solve P
 	 */
+	ProblemReducedOMP P(MSA);
 	MRFclass MRF;
 	if (opts.rmode > 0) {
 		MRF = Minimizer::MinimizeLBFGS(P, opts.niter);

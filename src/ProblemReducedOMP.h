@@ -37,8 +37,8 @@ private:
 
 	/* TODO: regularization functions
 	 * (to allow for easy inheritance) */
-//	double Reg_f(const double *x);
-//	double Reg_fdf(const double *x, double *g);
+	double Reg_f(const double *x);
+	double Reg_fdf(const double *x, double *g);
 
 public:
 

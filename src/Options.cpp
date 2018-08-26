@@ -13,7 +13,7 @@
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:m:u:R:p:s:t:b:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:R:p:s:t:b:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -48,12 +48,6 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				printf("Error: 0.0 <= gaps_per_col < 1.0 (-c)\n");
 				return false;
 			}
-			break;
-		case 'm': /* a list of residue pairs to be masked */
-			opts.mask = optarg;
-			break;
-		case 'u': /* a list of residue pairs to be unmasked */
-			opts.umask = optarg;
 			break;
 		case 'R': /* regularization mode */
 			if (strcmp(optarg, "FN") == 0) {
@@ -102,9 +96,6 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -n number of iterations          %ld\n", opts.niter);
 	printf("          -r max gaps per row [0;1)        %.2lf\n", opts.grow);
 	printf("          -c max gaps per column [0;1)     %.2lf\n", opts.gcol);
-//	printf("          -m list1.txt - residue pairs to be masked\n");
-//	printf("          -u list2.txt - residue pairs to be unmasked "
-//			"(all others are masked)\n");
 	printf("          -R contact matrix correction\n");
 	printf("             {FN,APC,PROB5,PROB8}          PROB8\n");
 	printf("          -t number of threads             %d\n", opts.nthreads);
@@ -121,7 +112,7 @@ void PrintCap(const OPTS &opts) {
 
 	printf("# %s\n", std::string(70, '-').c_str());
 	printf("# gremlin - a program to predict protein contact maps %18s\n",
-			VERSION);
+	VERSION);
 	printf("#           from multiple sequence alignments\n");
 	printf("# %s\n", std::string(70, '-').c_str());
 
