@@ -22,9 +22,11 @@ Experimental GREMLIN version with RRCE contact energies [3]
 * (+) get rid of masking/unmasking options in gremlin3
 * (-) allow for setting initial values for the Minimizer (new MRF class)
 * (-) move MRFprocessor functions to the new MRFclass, get rid of MRFprocessor
-* (-) train 1-body first, then switch to 2-body
+* (+) train 1-body first, then switch to 2-body
+* (-) refactor contacts processing for the new MRF class
 * (-) ProblemReducedOMP --> ProblemL2
 * (-) ProblemSmoothL1 (child of ProblemL2)
+* (-) How to deal with iteration-dependent parameters?
 * (-) MI+APC correction (MIAPC)
 * (-) ??? assign contact probabilities in a separate program ???
 

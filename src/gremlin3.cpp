@@ -20,6 +20,7 @@
 
 #include "MRFclassNew.h"
 
+/* TODO: move this function somewhere else */
 double PairEnergies(const MSAclass &MSA, double **mtx);
 
 int main(int argc, char *argv[]) {
