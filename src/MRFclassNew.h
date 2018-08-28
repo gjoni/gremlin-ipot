@@ -27,6 +27,8 @@ private:
 	void Allocate();
 	void Free();
 
+	void To2D(size_t k, size_t &i, size_t &j) const;
+
 	static double FNorm(const double *x, size_t dim);
 
 public:
@@ -34,6 +36,9 @@ public:
 	MRFclassNew();
 	MRFclassNew(const MSAclass &MSA);
 	MRFclassNew(const MRFclassNew &source);
+
+	/* TODO: check correctness of this constructor
+	 *       (probably incorrect) */
 	MRFclassNew(const std::string &name);
 
 	~MRFclassNew();

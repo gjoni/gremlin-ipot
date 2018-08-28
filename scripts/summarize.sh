@@ -25,7 +25,7 @@ grep -v "^>" $A3M | \
 	sed "s/[H,Y]/ 6/g; s/[B,X,U,Z,J,O]/ 7/g"  > $alifile
 
 grep -v "^#" $GRM | awk '{if($3-$1>2) {print $1, $3, $5}}' | sort -k3 -g -r | \
-	head -n $((LEN*3)) | sort -k3 -g > $grmfile
+	head -n $((LEN*3/2)) | sort -k3 -g > $grmfile
 
 head -n 4 $GRM | tail -1 | \
 	awk -v L="$LEN" '{

@@ -93,7 +93,18 @@ int main(int argc, char *argv[]) {
 		ProblemReducedOMP P(MSA);
 		Minimizer::MinimizeLBFGS(P, opts.niter, MRF_);
 	}
-	exit(1);
+
+//	if (opts.apc != NULL) {
+//		ContactList ContactsTmp(ncol);
+//		MRF_.APC(mtx);
+//		ContactsTmp.AddFeature("APC", mtx);
+//		ContactsTmp.SaveMTX(opts.apc, MSA);
+//	}
+//
+//	if (opts.mrf != NULL) {
+//		MRF_.Save(opts.mrf);
+//	}
+//	exit(1);
 
 	/*
 	 * (4) solve P
@@ -115,7 +126,8 @@ int main(int argc, char *argv[]) {
 	 * (for bbcontacts) */
 	if (opts.apc != NULL) {
 		ContactList ContactsTmp(ncol);
-		MRFprocessor::APC(MRF, mtx);
+//		MRFprocessor::APC(MRF, mtx);
+		MRF_.APC(mtx);
 		ContactsTmp.AddFeature("APC", mtx);
 		ContactsTmp.SaveMTX(opts.apc, MSA);
 	}

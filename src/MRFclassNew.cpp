@@ -24,7 +24,7 @@ MRFclassNew::MRFclassNew(const MSAclass &MSA_) :
 		dim(MSA_.GetNcol()), nvar1b(0), nvar2b(0), x(NULL), MSA(&MSA_) {
 
 	nvar1b = dim * MSA_.NAA;
-	nvar2b = dim * (dim - 1) * MSA_.NAA * MSA_.NAA;
+	nvar2b = dim * (dim - 1) / 2 * MSA_.NAA * MSA_.NAA;
 
 	Allocate();
 
@@ -162,11 +162,15 @@ void MRFclassNew::FN(double **mtx) const {
 	}
 
 	/* Frobenius norms of (NAA-1) x (NAA-1) submatrices */
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = i + 1; j < dim; j++) {
-			double *w = x + (i * dim + j) * NAA * NAA;
-			mtx[i][j] = FNorm(w, NAA);
-		}
+	for (size_t k = 0; k < dim * (dim - 1) / 2; k++) {
+
+		size_t i, j;
+		To2D(k, i, j);
+
+		double *w = x + nvar1b + k * NAA * NAA;
+		mtx[i][j] = FNorm(w, NAA);
+		mtx[j][i] = mtx[i][j];
+
 	}
 
 }
@@ -268,17 +272,31 @@ void MRFclassNew::Save(const std::string &name) const {
 	}
 
 	/* couplings */
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = i + 1; j < dim; j++) {
-			double *Jp = x + nvar1b + (i * dim + j) * NAA * NAA;
-			fprintf(F, "W[%ld][%ld]\n", i, j);
-			for (size_t aa = 0; aa < NAA * NAA; aa++) {
-				fprintf(F, "%.5e ", *Jp++);
-			}
-			fprintf(F, "\n");
+	for (size_t k = 0; k < dim * (dim - 1) / 2; k++) {
+
+		size_t i, j;
+		To2D(k, i, j);
+
+		double *Jp = x + nvar1b + k * NAA * NAA;
+
+		fprintf(F, "W[%ld][%ld]\n", i, j);
+		for (size_t aa = 0; aa < NAA * NAA; aa++) {
+			fprintf(F, "%.5e ", *Jp++);
 		}
+		fprintf(F, "\n");
+
 	}
 
 	fclose(F);
+
+}
+
+void MRFclassNew::To2D(size_t k, size_t &i, size_t &j) const {
+
+	size_t n = MSA->GetNcol();
+
+// https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix
+	i = n - 2 - floor(sqrt(-8 * k + 4 * n * (n - 1) - 7) / 2.0 - 0.5);
+	j = k + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2;
 
 }
