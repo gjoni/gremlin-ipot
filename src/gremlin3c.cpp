@@ -17,7 +17,7 @@
 #include <utility>
 
 #include "MSAclass.h"
-#include "ProblemFull.h"
+#include "ProblemReducedOMP.h"
 #include "Minimizer.h"
 #include "MRFprocessor.h"
 
@@ -85,9 +85,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-//	ProblemPNAS P(MSA, 2);
-//	ProblemRRCE P(MSA, 7);
-	ProblemFull P(MSA);
+	ProblemReducedOMP P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {

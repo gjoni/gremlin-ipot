@@ -14,7 +14,7 @@
 #include "Problem1Body.h"
 
 Problem1Body::Problem1Body() :
-		ProblemBase(), lsingle(0.0), dim1body(0), ea(NULL), pa(NULL), lpa(NULL) {
+		ProblemBase(), dim1body(0), ea(NULL), pa(NULL), lpa(NULL) {
 
 	/* nothing to be done */
 
@@ -23,7 +23,8 @@ Problem1Body::Problem1Body() :
 Problem1Body::Problem1Body(const MSAclass &MSA_) :
 		ProblemBase(MSA_), ea(NULL), pa(NULL), lpa(NULL) {
 
-	lsingle = 0.01;
+	SetLsingle(0.01);
+
 	dim1body = MSA->ncol * MSAclass::NAA;
 
 	dim = dim1body;
@@ -39,8 +40,10 @@ Problem1Body::Problem1Body(const MSAclass &MSA_) :
 }
 
 Problem1Body::Problem1Body(const Problem1Body &source) :
-		ProblemBase(source), lsingle(source.lsingle), dim1body(source.dim1body), ea(
+		ProblemBase(source), dim1body(source.dim1body), ea(
 		NULL), pa(NULL), lpa(NULL) {
+
+	SetLsingle(source.lsingle);
 
 	Allocate();
 
@@ -81,7 +84,7 @@ Problem1Body& Problem1Body::operator=(const Problem1Body &source) {
 	dim = source.dim;
 	dim1body = source.dim1body;
 
-	MSA = source.MSA;
+	SetLsingle(source.lsingle);
 
 	MSA = source.MSA;
 
@@ -296,5 +299,11 @@ void Problem1Body::df(const double *x, double *g) {
 void Problem1Body::GetMRFvector(const double *x, double *mrfx) {
 
 	/* */
+
+}
+
+void Problem1Body::Iterate() {
+
+	/* dummy function */
 
 }

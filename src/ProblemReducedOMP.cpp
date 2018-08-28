@@ -14,8 +14,7 @@
 #include <omp.h>
 
 ProblemReducedOMP::ProblemReducedOMP() :
-		ProblemBase(), lsingle(0.0), lpair(0.0), dim1body(0), dim2body(0), dim2reduced(
-				0), gaux(
+		ProblemBase(), dim1body(0), dim2body(0), dim2reduced(0), gaux(
 		NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
 	/* nothing to be done */
@@ -25,8 +24,8 @@ ProblemReducedOMP::ProblemReducedOMP() :
 ProblemReducedOMP::ProblemReducedOMP(const MSAclass &MSA_) :
 		ProblemBase(MSA_), gaux(NULL), ea(NULL), pa(NULL), lpa(NULL) {
 
-	lsingle = 0.01;
-	lpair = 0.2 * (MSA->ncol - 1);
+	SetLsingle(0.01);
+	SetLpair(0.2 * (MSA->ncol - 1));
 
 	dim1body = MSA->ncol * MSAclass::NAA;
 	dim2body = dim1body * dim1body;
@@ -48,10 +47,12 @@ ProblemReducedOMP::ProblemReducedOMP(const MSAclass &MSA_) :
 }
 
 ProblemReducedOMP::ProblemReducedOMP(const ProblemReducedOMP &source) :
-		ProblemBase(source), lsingle(source.lsingle), lpair(source.lpair), dim1body(
-				source.dim1body), dim2body(source.dim2body), dim2reduced(
-				source.dim2reduced), gaux(NULL), ea(
+		ProblemBase(source), dim1body(source.dim1body), dim2body(
+				source.dim2body), dim2reduced(source.dim2reduced), gaux(NULL), ea(
 		NULL), pa(NULL), lpa(NULL) {
+
+	SetLsingle(source.lsingle);
+	SetLpair(source.lpair);
 
 	Allocate();
 
@@ -100,6 +101,9 @@ ProblemReducedOMP& ProblemReducedOMP::operator=(
 	dim2reduced = source.dim2reduced;
 
 	MSA = source.MSA;
+
+	SetLsingle(source.lsingle);
+	SetLpair(source.lpair);
 
 	AllocateBase();
 	Allocate();
@@ -515,3 +519,8 @@ void ProblemReducedOMP::To2D(size_t k, size_t &i, size_t &j) {
 
 }
 
+void ProblemReducedOMP::Iterate() {
+
+	/* dummy function */
+
+}

@@ -14,10 +14,6 @@ class ProblemReducedOMP: public ProblemBase {
 
 private:
 
-	/* regularization parameters */
-	double lsingle;
-	double lpair;
-
 	/* Vi and Wij dimensions */
 	size_t dim1body;
 	size_t dim2body;
@@ -35,10 +31,10 @@ private:
 	size_t To1D(size_t i, size_t j);
 	void To2D(size_t k, size_t &i, size_t &j);
 
-	/* TODO: regularization functions
-	 * (to allow for easy inheritance) */
 	double Reg_f(const double *x);
 	double Reg_fdf(const double *x, double *g);
+
+	void Iterate();
 
 public:
 

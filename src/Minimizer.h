@@ -37,7 +37,6 @@ public:
 
 	/* TODO: CG minimizer - more memory efficient */
 	// static MRFclass MinimizeCG(ProblemBase &P, int niter);
-
 	/* TODO: ADMM minimizer for L1 penalty */
 
 };

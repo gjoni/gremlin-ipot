@@ -111,6 +111,7 @@ lbfgsfloatval_t Minimizer::_evaluate(void *instance, const lbfgsfloatval_t *x,
 	ProblemBase *_P = (ProblemBase*) instance;
 	lbfgsfloatval_t f;
 	_P->fdf(x, &f, g);
+	_P->Iterate();
 	return f;
 
 }

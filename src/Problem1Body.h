@@ -14,9 +14,6 @@ class Problem1Body: public ProblemBase {
 
 private:
 
-	/* 1-body regularization parameter */
-	double lsingle;
-
 	/* Vi dimensions */
 	size_t dim1body;
 
@@ -27,6 +24,8 @@ private:
 
 	void Allocate();
 	void Free();
+
+	void Iterate();
 
 public:
 

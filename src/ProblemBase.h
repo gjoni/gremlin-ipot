@@ -5,7 +5,6 @@
  *      Author: ivan
  */
 
-// V20170720 - first functional class
 #ifndef PROBLEMBASE_H_
 #define PROBLEMBASE_H_
 
@@ -32,8 +31,21 @@ protected:
 
 	bool *we; /* for masking (2D array in 1D representation)*/
 
+	/* regularization parameters */
+	double lsingle;
+	double lpair;
+
+	void SetLsingle(double);
+	void SetLpair(double);
+
 	void AllocateBase();
 	void FreeBase();
+
+	/* iteration-specific problem parameters */
+	std::vector<double> ipar;
+	std::vector<double>::iterator ipar_iter;
+
+	virtual void Iterate() = 0;
 
 public:
 
@@ -66,6 +78,11 @@ public:
 	void MaskAllEdges();
 
 	size_t GetDim();
+
+	/*
+	 * set up iterations schedule
+	 */
+	void SetUpIterations(const std::vector<double>&);
 
 };
 
