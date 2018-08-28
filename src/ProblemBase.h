@@ -12,7 +12,6 @@
 #include <utility>
 
 #include "MSAclass.h"
-#include "MRFclass.h"
 
 /*
  * base abstract class for handling the Gremlin problem

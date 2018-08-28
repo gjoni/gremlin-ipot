@@ -19,7 +19,6 @@
 #include "MSAclass.h"
 #include "ProblemReducedOMP.h"
 #include "Minimizer.h"
-#include "MRFprocessor.h"
 
 struct OPTS {
 	char *a3m; /* A3M file */
@@ -100,65 +99,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	/*
-	 * (4) solve P
-	 */
-	MRFclass MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
 
-	/*
-	 {
-	 std::vector<double> v = MRF.ScoreMSA(MSA);
-	 double E = 0.0;
-	 for (size_t i = 0; i < v.size(); i++) {
-	 E += v[i];
-	 }
-	 E /= v.size();
-	 printf("# <E_sequence>= %f\n", E);
-	 }
-	 */
-
-	/*
-	 * (5) save MRF
-	 */
-	if (opts.mrf != NULL) {
-		MRF.Save(opts.mrf);
-	}
-
-	/*
-	 * (6) do MRF post-processing
-	 */
-	if (opts.mtx != NULL) {
-		MRFprocessor::MTX result;
-		switch (opts.rmode) {
-		case 1:
-			MRFprocessor::FN(MRF, result);
-			break;
-		case 2:
-			MRFprocessor::APC(MRF, result);
-			break;
-		case 3:
-			MRFprocessor::BAPC(MRF, result, opts.shift);
-			break;
-		default:
-			printf("!!! ACHTUNG !!! (this should never happen)\n");
-			return 1;
-		}
-		MRFprocessor::SaveMTX(result, opts.mtx);
-
-		/*
-		 * (7) calculate per group scores
-		 */
-		if (opts.umask != NULL) {
-			for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {
-				std::vector<std::pair<size_t, size_t> > vec = MSA.CastToMsa(
-						it->second);
-				double score = MRFprocessor::GetScore(result, vec);
-				double energy = MRF.GetPairEnergies(MSA, vec);
-				printf("# Score(%s)= %.6e, Energy(%s)= %.6e\n",
-						it->first.c_str(), score, it->first.c_str(), energy);
-			}
-		}
-	}
 
 	return 0;
 

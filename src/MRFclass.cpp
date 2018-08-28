@@ -1,143 +1,74 @@
 /*
  * MRFclass.cpp
  *
- *  Created on: Jul 20, 2017
- *      Author: ivan
+ *  Created on: Aug 24, 2018
+ *      Author: aivan
  */
 
+#include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <cstdio>
+#include <cmath>
 
 #include "MRFclass.h"
 
 MRFclass::MRFclass() :
-		dim(0), dimh(0), dimJ(0), len_ref(0), mtx_to_a3m(0), a3m_to_mtx(0), h(
-		NULL), J(NULL), we(
-		NULL) {
+		dim(0), nvar1b(0), nvar2b(0), x(NULL), MSA(NULL) {
 
 	/* */
 
 }
 
-MRFclass::MRFclass(const MRFclass &s) :
-		dim(s.dim), dimh(s.dimh), dimJ(s.dimJ), len_ref(s.len_ref), mtx_to_a3m(
-				0), a3m_to_mtx(0), h(NULL), J(
-		NULL), we(
-		NULL) {
+MRFclass::MRFclass(const MSAclass &MSA_) :
+		dim(MSA_.GetNcol()), nvar1b(0), nvar2b(0), x(NULL), MSA(&MSA_) {
+
+	nvar1b = dim * MSA_.NAA;
+	nvar2b = dim * (dim - 1) / 2 * MSA_.NAA * MSA_.NAA;
 
 	Allocate();
 
-	memcpy(h, s.h, dimh * sizeof(double));
-	memcpy(J, s.J, dimJ * sizeof(double));
-	memcpy(we, s.we, dim * dim * sizeof(bool));
-
 }
 
-MRFclass::MRFclass(double *x, const MSAclass *MSA) :
-		dim(MSA->GetNcol()), len_ref(MSA->GetLen()), mtx_to_a3m(MSA->col_map), a3m_to_mtx(
-				MSA->a3m_to_msa), h(NULL), J(NULL), we(NULL) {
-
-	size_t NAA = MSAclass::NAA;
-
-	dimh = dim * NAA;
-	dimJ = dimh * dimh;
-
-	double *h_ = x;
-	double *J_ = x + dimh;
+MRFclass::MRFclass(const MRFclass &source) :
+		dim(source.dim), nvar1b(source.nvar1b), nvar2b(source.nvar2b), x(NULL), MSA(
+				source.MSA) {
 
 	Allocate();
-
-	memcpy(h, h_, dimh * sizeof(double));
-	memcpy(J, J_, dimJ * sizeof(double));
-
-//	for (size_t i = 0; i < dim; i++) {
-//		for (size_t a = 0; a < NAA; a++) {
-//			h[i * NAA + a] = h_[a * dim + i];
-//		}
-//	}
-//
-//	for (size_t i = 0; i < dim; i++) {
-//		for (size_t a = 0; a < NAA; a++) {
-//			for (size_t j = 0; j < dim; j++) {
-//				for (size_t b = 0; b < NAA; b++) {
-//					J[(i * dim + j) * NAA * NAA + a * NAA + b] = J_[((a * dim
-//							+ i) * NAA + b) * dim + j];
-//				}
-//			}
-//		}
-//	}
-
-	for (size_t i = 0; i < dim * dim; i++) {
-		we[i] = true;
-	}
-
-}
-
-MRFclass::MRFclass(double *x, bool *we_, const MSAclass *MSA) :
-		MRFclass(x, MSA) {
-
-	memcpy(we, we_, dim * dim * sizeof(bool));
+	memcpy(x, source.x, (nvar1b + nvar2b) * sizeof(double));
 
 }
 
 MRFclass::MRFclass(const std::string &name) :
-		dim(0), dimh(0), dimJ(0), len_ref(0), mtx_to_a3m(0), a3m_to_mtx(0), h(
-		NULL), J(NULL), we(NULL) {
+		dim(0), nvar1b(0), nvar2b(0), x(NULL), MSA(NULL) {
 
 	FILE *F = fopen(name.c_str(), "r");
 	if (F == NULL) {
-		printf("Error: cannot open '%s' file to save MRF\n", name.c_str());
+		printf("Error: cannot read MRF from file '%s'\n", name.c_str());
 		exit(1);
 	}
 
 	size_t NAA = MSAclass::NAA;
 
-	/* dimensions (seq length) */
-	fscanf(F, "%lu %lu\n", &dim, &len_ref);
-	dimh = dim * NAA;
-	dimJ = dimh * dimh;
+	/* read dimensions */
+	fscanf(F, "%lu %lu %lu\n", &dim, &nvar1b, &nvar2b);
 
 	Allocate();
 
-	/* read maps */
-	mtx_to_a3m.resize(dim);
-	a3m_to_mtx.resize(len_ref);
+	/* read fields */
 	for (size_t i = 0; i < dim; i++) {
-		fscanf(F, "%lu ", &(mtx_to_a3m[i]));
-	}
-	for (size_t i = 0; i < len_ref; i++) {
-		fscanf(F, "%lu ", &(a3m_to_mtx[i]));
-	}
-
-	/* edge weights */
-	{
-		size_t SIZE = dim + 2;
-		char *buf = (char*) malloc(SIZE * sizeof(char));
-		for (size_t i = 0; i < dim; i++) {
-			fgets(buf, SIZE, F);
-			for (size_t j = 0; j < dim; j++) {
-				char c = buf[j];
-				if (c == '1') {
-					we[i * dim + j] = true;
-				} else {
-					we[i * dim + j] = false;
-				}
-			}
-		}
-		free(buf);
-	}
-
-	/* local fields */
-	for (size_t i = 0; i < dim; i++) {
+		fscanf(F, "%*s\n");
 		for (size_t a = 0; a < NAA; a++) {
-			fscanf(F, "%lf ", h + (i * NAA + a));
+//			fscanf(F, "%lf ", x + (i * NAA + a));
+			fscanf(F, "%lf ", x + (a * dim + i));
 		}
 	}
 
 	/* couplings */
 	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = 0; j < dim; j++) {
-			double *Jp = J + (i * dim + j) * NAA * NAA;
+		for (size_t j = i + 1; j < dim; j++) {
+			double *Jp = x + nvar1b + (i * dim + j) * NAA * NAA;
+			fscanf(F, "%*s\n");
 			for (size_t aa = 0; aa < NAA * NAA; aa++) {
 				fscanf(F, "%lf ", Jp++);
 			}
@@ -148,61 +79,172 @@ MRFclass::MRFclass(const std::string &name) :
 
 }
 
-MRFclass& MRFclass::operator=(const MRFclass &source) {
-
-	assert(this != &source); /* an attempt to assign Residue to itself */
-
-	Free();
-
-	dim = source.dim;
-	dimh = source.dimh;
-	dimJ = source.dimJ;
-
-	len_ref = source.len_ref;
-	mtx_to_a3m = source.mtx_to_a3m;
-	a3m_to_mtx = source.a3m_to_mtx;
-
-	Allocate();
-
-	memcpy(h, source.h, dimh * sizeof(double));
-	memcpy(J, source.J, dimJ * sizeof(double));
-	memcpy(we, source.we, dim * dim * sizeof(bool));
-
-	return *this;
-
-}
-
 MRFclass::~MRFclass() {
 
 	Free();
 
 }
 
+MRFclass& MRFclass::operator=(const MRFclass &source) {
+
+	assert(this != &source);
+
+	Free();
+
+	dim = source.dim;
+	nvar1b = source.nvar1b;
+	nvar2b = source.nvar2b;
+
+	MSA = source.MSA;
+
+	Allocate();
+
+	memcpy(x, source.x, (nvar1b + nvar2b) * sizeof(double));
+
+	return *this;
+
+}
+
 void MRFclass::Allocate() {
 
-	h = (double*) malloc(dimh * sizeof(double));
-	J = (double*) malloc(dimJ * sizeof(double));
-	we = (bool*) malloc(dim * dim * sizeof(bool));
+	if (MSA != NULL) {
+		x = (double*) calloc(nvar1b + nvar2b, sizeof(double));
+	}
 
 }
 
 void MRFclass::Free() {
 
-	if (h != NULL) {
-		free(h);
-	}
-	if (J != NULL) {
-		free(J);
-	}
-	if (we != NULL) {
-		free(we);
-	}
+	free(x);
 
 }
 
 size_t MRFclass::GetDim() const {
 
 	return dim;
+
+}
+
+double* MRFclass::GetX() const {
+
+	return x;
+
+}
+
+double MRFclass::FNorm(const double *mat, size_t dim) {
+
+	double norm = 0.0, mean = 0.0;
+
+	for (size_t aa = 0; aa < dim; aa++) {
+		mean += mat[aa];
+	}
+	mean /= dim * dim;
+
+	/* last symbol (gap) is omitted */
+	for (size_t a = 0; a < dim - 1; a++) {
+		for (size_t b = 0; b < dim - 1; b++) {
+			double m = mat[a * dim + b] - mean;
+			norm += m * m;
+		}
+	}
+
+	return sqrt(norm);
+
+}
+
+void MRFclass::FN(double **mtx) const {
+
+	size_t NAA = MSAclass::NAA;
+
+	/* initialize mtx[][] with zeroes */
+	for (size_t i = 0; i < dim; i++) {
+		memset(mtx[i], 0, dim * sizeof(double));
+	}
+
+	/* Frobenius norms of (NAA-1) x (NAA-1) submatrices */
+	for (size_t k = 0; k < dim * (dim - 1) / 2; k++) {
+
+		size_t i, j;
+		To2D(k, i, j);
+
+		double *w = x + nvar1b + k * NAA * NAA;
+		mtx[i][j] = FNorm(w, NAA);
+		mtx[j][i] = mtx[i][j];
+
+	}
+
+}
+
+void MRFclass::APC(double **mtx) const {
+
+	FN(mtx);
+	APC(dim, mtx);
+
+}
+
+void MRFclass::APC(size_t dim, double **mtx) {
+
+	/* row/col averages */
+	double *means = (double*) calloc(dim, sizeof(double));
+	double meansum = 0.0;
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			double w = mtx[i][j];
+			means[j] += w / dim;
+			meansum += w;
+		}
+	}
+	meansum /= dim * dim;
+
+	/* apply APC to mtx[][] */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = 0; j < dim; j++) {
+			mtx[i][j] -= (means[i] * means[j]) / meansum;
+		}
+		mtx[i][i] = 0.0;
+	}
+
+	/* free */
+	free(means);
+
+}
+
+void MRFclass::Zscore(size_t dim, double **mtx) {
+
+	/* calculate average */
+	double av = 0.0;
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			av += mtx[i][j];
+		}
+	}
+	av = 2.0 * av / dim / (dim - 1);
+
+	/* calculate standard deviation */
+	double std = 0.0;
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			double d = mtx[i][j] - av;
+			std += d * d;
+		}
+	}
+	std = sqrt(2.0 * std / dim / (dim - 1));
+
+	/* update matrix */
+	for (size_t i = 0; i < dim; i++) {
+		for (size_t j = i + 1; j < dim; j++) {
+			double x = (mtx[i][j] - av) / std;
+			mtx[i][j] = mtx[j][i] = x;
+		}
+	}
+
+}
+
+void MRFclass::SetMSA(const MSAclass &MSA_) {
+
+	assert(MSA_.GetNcol() == dim);
+
+	MSA = &MSA_;
 
 }
 
@@ -216,167 +258,45 @@ void MRFclass::Save(const std::string &name) const {
 
 	size_t NAA = MSAclass::NAA;
 
-	/* dimension (seq length) */
-	fprintf(F, "%ld %ld\n", dim, len_ref);
-
-	/* save maps */
-	for (size_t i = 0; i < dim; i++) {
-		fprintf(F, "%lu ", mtx_to_a3m[i]);
-	}
-	fprintf(F, "\n");
-	for (size_t i = 0; i < len_ref; i++) {
-		fprintf(F, "%lu ", a3m_to_mtx[i]);
-	}
-	fprintf(F, "\n");
-
-	/* edge weights */
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = 0; j < dim; j++) {
-			if (we[i * dim + j] == 1) {
-				fputc('1', F);
-			} else {
-				fputc('0', F);
-			}
-		}
-		fprintf(F, "\n");
-	}
+	/* save dimensions */
+	fprintf(F, "%ld %ld %ld\n", dim, nvar1b, nvar2b);
 
 	/* local fields */
 	for (size_t i = 0; i < dim; i++) {
+		fprintf(F, "V[%ld]\n", i);
 		for (size_t a = 0; a < NAA; a++) {
-			fprintf(F, "%.5e ", h[i * NAA + a]);
+//			fprintf(F, "%.5e ", x[i * NAA + a]);
+			fprintf(F, "%.5e ", x[a * dim + i]);
 		}
 		fprintf(F, "\n");
 	}
 
 	/* couplings */
-	for (size_t i = 0; i < dim; i++) {
-		for (size_t j = 0; j < dim; j++) {
-			double *Jp = J + (i * dim + j) * NAA * NAA;
-			for (size_t aa = 0; aa < NAA * NAA; aa++) {
-				fprintf(F, "%.5e ", *Jp++);
-			}
-			fprintf(F, "\n");
+	for (size_t k = 0; k < dim * (dim - 1) / 2; k++) {
+
+		size_t i, j;
+		To2D(k, i, j);
+
+		double *Jp = x + nvar1b + k * NAA * NAA;
+
+		fprintf(F, "W[%ld][%ld]\n", i, j);
+		for (size_t aa = 0; aa < NAA * NAA; aa++) {
+			fprintf(F, "%.5e ", *Jp++);
 		}
+		fprintf(F, "\n");
+
 	}
 
 	fclose(F);
 
 }
 
-double MRFclass::GetPairEnergies(const MSAclass &MSA,
-		const std::vector<std::pair<size_t, size_t> > &contacts) const {
+void MRFclass::To2D(size_t k, size_t &i, size_t &j) const {
 
-	assert(MSA.GetNcol() == dim); /* MRF and cleaned MSA length mismatch */
+	size_t n = MSA->GetNcol();
 
-	double E = 0.0;
-
-	size_t nrow = MSA.GetNrow();
-	size_t ncol = MSA.GetNcol();
-	size_t NAA = MSAclass::NAA;
-
-	/* prepare cleaned MSA */
-	unsigned char *msa = MSA.GetMsa();
-	MSAclass::aatoi(msa, nrow * ncol);
-
-	/* loop over all sequences in the msa[] */
-	for (size_t i = 0; i < nrow; i++) {
-
-		/* current sequence */
-		unsigned char *seq = msa + i * ncol;
-
-		/* loop over all contacts */
-		for (const auto& c : contacts) {
-			size_t a = seq[c.first];
-			size_t b = seq[c.second];
-
-			/* omit pairs with gaps */
-			if (a < NAA - 1 && b < NAA - 1) {
-				E += J[(c.first * ncol + c.second) * NAA * NAA + a * NAA + b];
-			}
-
-		}
-	}
-
-	return E;
-
-}
-
-double MRFclass::GetPairEnergies(const unsigned char *msa, size_t nrow,
-		const std::vector<std::pair<size_t, size_t> > &contacts) const {
-
-	double E = 0.0;
-
-	size_t NAA = MSAclass::NAA;
-
-	/* loop over all sequences in the msa[] */
-	for (size_t i = 0; i < nrow; i++) {
-
-		/* current sequence */
-		const unsigned char *seq = msa + i * dim;
-
-		/* loop over all contacts */
-		for (const auto& c : contacts) {
-			size_t a = seq[c.first];
-			size_t b = seq[c.second];
-
-			/* omit pairs with gaps */
-			if (a < NAA - 1 && b < NAA - 1) {
-				E += J[(c.first * dim + c.second) * NAA * NAA + a * NAA + b];
-			}
-
-		}
-	}
-
-	return E;
-
-}
-
-std::vector<double> MRFclass::ScoreMSA(const MSAclass &MSA) {
-
-	std::vector<double> v;
-
-	size_t NAA = MSAclass::NAA;
-
-	unsigned char *seq = (unsigned char*) malloc(
-			MSA.ncol * sizeof(unsigned char));
-
-	for (size_t i = 0; i < MSA.nrow; i++) {
-
-		/* convert A3M sequence into indices */
-		const std::string &a3m_seq = MSA.a3m[MSA.row_map[i]].second;
-		for (size_t j = 0; j < MSA.ncol; j++) {
-			seq[j] = MSAclass::aatoi(a3m_seq[MSA.col_map[j]]);
-		}
-
-		double E = 0.0;
-
-		/* local fields */
-		size_t nnongap = 0;
-		for (size_t j = 0; j < MSA.ncol; j++) {
-			E += h[j * NAA + seq[j]];
-			if (seq[j] < NAA - 1) {
-				nnongap++;
-			}
-		}
-
-		/* couplings */
-		for (size_t j = 0; j < MSA.ncol; j++) {
-			unsigned char a = seq[j];
-			for (size_t k = j + 1; k < MSA.ncol; k++) {
-				unsigned char b = seq[k];
-//				if (a < NAA - 1 && b < NAA - 1) {
-				E += J[j * MSA.ncol + k] * NAA * NAA + (a * NAA + b);
-//				}
-			}
-		}
-
-		v.push_back(-E);
-
-	}
-
-	free(seq);
-
-	return v;
+// https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix
+	i = n - 2 - floor(sqrt(-8 * k + 4 * n * (n - 1) - 7) / 2.0 - 0.5);
+	j = k + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2;
 
 }

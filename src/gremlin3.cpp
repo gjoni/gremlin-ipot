@@ -8,16 +8,15 @@
 #include <omp.h>
 
 #include "MSAclass.h"
+#include "MRFclass.h"
+
 #include "ProblemReducedOMP.h"
 #include "Problem1Body.h"
 #include "Minimizer.h"
-#include "MRFprocessor.h"
 #include "ContactList.h"
 #include "RRCE.h"
 #include "LogRegCoeff.h"
 #include "Options.h"
-
-#include "MRFclassNew.h"
 
 /* TODO: move this function somewhere else */
 double PairEnergies(const MSAclass &MSA, double **mtx);
@@ -27,7 +26,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 50, 0.25, 0.25, 4, 1, NULL };
+	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, 4, 1, NULL };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -69,7 +68,6 @@ int main(int argc, char *argv[]) {
 	MSA.HxHy(mtx);
 	Contacts.AddFeature("Hx+Hy", mtx);
 
-	/* TODO: move down, after minimization */
 	/* statistical potential */
 	printf("# E(RRCE)= %.5f\n", PairEnergies(MSA, mtx));
 	Contacts.AddFeature("RRCE", mtx);
@@ -77,13 +75,13 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	MRFclassNew MRF_(MSA);
+	MRFclass MRF(MSA);
 	{
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 1: solve for local fields\n");
 		printf("# %s\n", std::string(70, '-').c_str());
 		Problem1Body P1(MSA);
-		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF_);
+		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF);
 	}
 
 	{
@@ -91,28 +89,7 @@ int main(int argc, char *argv[]) {
 		printf("# step 2: solve for local fields and couplings\n");
 		printf("# %s\n", std::string(70, '-').c_str());
 		ProblemReducedOMP P(MSA);
-		Minimizer::MinimizeLBFGS(P, opts.niter, MRF_);
-	}
-
-//	if (opts.apc != NULL) {
-//		ContactList ContactsTmp(ncol);
-//		MRF_.APC(mtx);
-//		ContactsTmp.AddFeature("APC", mtx);
-//		ContactsTmp.SaveMTX(opts.apc, MSA);
-//	}
-//
-//	if (opts.mrf != NULL) {
-//		MRF_.Save(opts.mrf);
-//	}
-//	exit(1);
-
-	/*
-	 * (4) solve P
-	 */
-	ProblemReducedOMP P(MSA);
-	MRFclass MRF;
-	if (opts.rmode > 0) {
-		MRF = Minimizer::MinimizeLBFGS(P, opts.niter);
+		Minimizer::MinimizeLBFGS(P, opts.niter, MRF);
 	}
 
 	/*
@@ -126,8 +103,7 @@ int main(int argc, char *argv[]) {
 	 * (for bbcontacts) */
 	if (opts.apc != NULL) {
 		ContactList ContactsTmp(ncol);
-//		MRFprocessor::APC(MRF, mtx);
-		MRF_.APC(mtx);
+		MRF.APC(mtx);
 		ContactsTmp.AddFeature("APC", mtx);
 		ContactsTmp.SaveMTX(opts.apc, MSA);
 	}
@@ -141,18 +117,18 @@ int main(int argc, char *argv[]) {
 		break;
 	case 1:
 		printf("# Contact matrix correction : FN\n");
-		MRFprocessor::FN(MRF, mtx);
+		MRF.FN(mtx);
 		Contacts.AddFeature("FN", mtx);
 		break;
 	case 2:
 		printf("# Contact matrix correction : APC\n");
-		MRFprocessor::APC(MRF, mtx);
+		MRF.APC(mtx);
 		Contacts.AddFeature("APC", mtx);
 		break;
 	case 3:
 		printf("# Contact matrix correction : PROB5\n");
-		MRFprocessor::APC(MRF, mtx);
-		MRFprocessor::Zscore(ncol, mtx);
+		MRF.APC(mtx);
+		MRF.Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
 		if (ncol < 100) {
 			printf("#          Coefficients set : 0..100\n");
@@ -179,8 +155,8 @@ int main(int argc, char *argv[]) {
 		break;
 	case 4:
 		printf("# Contact matrix correction : PROB8\n");
-		MRFprocessor::APC(MRF, mtx);
-		MRFprocessor::Zscore(ncol, mtx);
+		MRF.APC(mtx);
+		MRF.Zscore(ncol, mtx);
 		Contacts.AddFeature("Z(APC)", mtx);
 		if (ncol < 100) {
 			printf("#          Coefficients set : 0..100\n");
@@ -217,7 +193,7 @@ int main(int argc, char *argv[]) {
 		Contacts.SaveMTX(opts.mtx, MSA);
 	}
 
-//	Contacts.Print(MSA);
+	Contacts.Print(MSA);
 
 	/*
 	 * (8) finish date/time

@@ -27,7 +27,7 @@ grep -v "^>" $A3M | \
 grep -v "^#" $GRM | awk '{if($3-$1>2) {print $1, $3, $5}}' | sort -k3 -g -r | \
 	head -n $((LEN*3/2)) | sort -k3 -g > $grmfile
 
-head -n 4 $GRM | tail -1 | \
+head -n 12 $GRM | tail -1 | \
 	awk -v L="$LEN" '{
 		split($2,c,"")
 		for(i=1;i<=length($2);i++) {

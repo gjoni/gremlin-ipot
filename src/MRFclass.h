@@ -1,8 +1,8 @@
 /*
  * MRFclass.h
  *
- *  Created on: Jul 20, 2017
- *      Author: ivan
+ *  Created on: Aug 24, 2018
+ *      Author: aivan
  */
 
 #ifndef MRFCLASS_H_
@@ -12,60 +12,69 @@
 
 class MRFclass {
 
-	friend class Minimizer;
-	friend class MRFprocessor;
-
 private:
 
-	size_t dim; /* MRF dimension (sequence length) */
+	/* MRF dimensions (cleaned sequence) */
+	size_t dim;
+	size_t nvar1b;
+	size_t nvar2b;
 
-	size_t dimh;
-	size_t dimJ;
+	/* MRF parameters: both h[] and J[][] */
+	double *x;
 
-	size_t len_ref;
-
-	/* TODO: save/read these arrays */
-	std::vector<size_t> mtx_to_a3m; /* size() = dim */
-	std::vector<size_t> a3m_to_mtx; /* size() = len_ref */
-
-	double *h; /* dim * NAA */
-	double *J; /* dim * dim * NAA * NAA */
-
-	bool *we; /* for masking */
+	const MSAclass *MSA;
 
 	void Allocate();
 	void Free();
 
+	void To2D(size_t k, size_t &i, size_t &j) const;
+
+	static double FNorm(const double *x, size_t dim);
+
 public:
 
 	MRFclass();
+	MRFclass(const MSAclass &MSA);
 	MRFclass(const MRFclass &source);
-	MRFclass(double *x, const MSAclass *MSA);
-	MRFclass(double *x, bool *we, const MSAclass *MSA);
-	MRFclass(const std::string &name); /* read MRF from file */
+
+	/* TODO: check correctness of this constructor
+	 *       (probably incorrect) */
+	MRFclass(const std::string &name);
+
 	~MRFclass();
 
 	MRFclass& operator=(const MRFclass &source);
 
 	size_t GetDim() const;
 
+	double* GetX() const;
+
+	void SetMSA(const MSAclass &MSA);
+
 	void Save(const std::string &name) const;
 
 	/*
-	 * score the native MSA (MSA.ncol == MRF.dim)
+	 * FUNCTIONS FOR MRF CONVERTION INTO CONTACT MAPS
+	 * AND FOR MANIPULATION OF THE LATTER
 	 */
+	void FN(double **mtx) const;
+	void APC(double **mtx) const;
+//	void BAPC(double **mtx) const;
+//	void DI(double **mtx) const;
 
-	std::vector<double> ScoreMSA(const MSAclass &MSA);
+	static void APC(size_t dim, double **mtx);
+	static void Zscore(size_t dim, double **mtx);
 
-	/* contacts indices match reference sequence */
-	double GetPairEnergies(const MSAclass &MSA,
-			const std::vector<std::pair<size_t, size_t> > &contacts) const;
+//	static void SaveMTX(size_t dim, double **mtx);
+//	static void SaveMTX(const MSAclass &MSA, double **mtx);
 
-	/* msa[] cleaned and converted to 0..20 characters;
-	 * contacts indices should match msa[] */
-	double GetPairEnergies(const unsigned char *msa, size_t nrow,
-			const std::vector<std::pair<size_t, size_t> > &contacts) const;
-
+	/*
+	 * FUNCTIONS TO SCORE SEQUENCES
+	 * BASED ON THE TRAINED MRF
+	 */
+//	double E(const std::string &seq);
+	/* mode = 1 - chainA, 2 - chainB, 12 - interchain */
+//	double E(const std::string &seq, size_t shift, int mode = 12);
 };
 
 #endif /* MRFCLASS_H_ */
