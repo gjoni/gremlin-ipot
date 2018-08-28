@@ -29,6 +29,15 @@ Experimental GREMLIN version with RRCE contact energies [3]
 * (-) How to deal with iteration-dependent parameters?
 * (-) MI+APC correction (MIAPC)
 * (-) ??? assign contact probabilities in a separate program ???
+* (-) train 1-body terms for gaps
+* (-) retrain and benchmark the new probabilities
+* (-) move regularization to separate functions in Problem1Body class
+
+* (-) Change names:
+ProblemReducedOMP --> ProblemL2
+Problem1Body      --> ProblemL2_h
+
+* (-) New classes: ProblemSL1, ProblemSL1_h
 
 ## Installation
 

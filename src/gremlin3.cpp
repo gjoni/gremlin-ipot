@@ -83,7 +83,6 @@ int main(int argc, char *argv[]) {
 		printf("# step 1: solve for local fields\n");
 		printf("# %s\n", std::string(70, '-').c_str());
 		Problem1Body P1(MSA);
-//		P1.SetUpIterations
 		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF_);
 	}
 

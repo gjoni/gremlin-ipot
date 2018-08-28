@@ -25,6 +25,10 @@ private:
 	void Allocate();
 	void Free();
 
+	/* TODO: implement */
+	double Reg_f(const double *x);
+	double Reg_fdf(const double *x, double *g);
+
 	void Iterate();
 
 public:
