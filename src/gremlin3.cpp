@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
 		Contacts.SaveMTX(opts.mtx, MSA);
 	}
 
-	Contacts.Print(MSA);
+//	Contacts.Print(MSA);
 
 	/*
 	 * (8) finish date/time

@@ -159,15 +159,7 @@ double ProblemL2_1b::f(const double *x) {
 	}
 
 	/* regularization */
-	double reg = 0.0;
-#if defined(_OPENMP)
-#pragma omp parallel for reduction (+:reg)
-#endif
-	for (size_t v = 0; v < dim1body; v++) {
-		reg += lsingle * x[v] * x[v];
-	}
-
-	f += reg;
+	f += Reg_f(x);
 
 	return f;
 
@@ -273,19 +265,8 @@ void ProblemL2_1b::fdf(const double *x, double *f, double *g) {
 		}
 	}
 
-	double reg = 0.0;
-
 	/* regularize h */
-
-#if defined(_OPENMP)
-#pragma omp parallel for reduction (+:reg)
-#endif
-	for (size_t v = 0; v < dim1body; v++) {
-		reg += lsingle * x[v] * x[v];
-		g[v] += 2.0 * lsingle * x[v];
-	}
-
-	*f += reg;
+	*f += Reg_fdf(x, g);
 
 }
 
@@ -305,5 +286,35 @@ void ProblemL2_1b::GetMRFvector(const double *x, double *mrfx) {
 void ProblemL2_1b::Iterate() {
 
 	/* dummy function */
+
+}
+
+double ProblemL2_1b::Reg_f(const double *x) {
+
+	double reg = 0.0;
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
+	for (size_t v = 0; v < dim1body; v++) {
+		reg += lsingle * x[v] * x[v];
+	}
+
+	return reg;
+
+}
+
+double ProblemL2_1b::Reg_fdf(const double *x, double *g) {
+
+	double reg = 0.0;
+
+#if defined(_OPENMP)
+#pragma omp parallel for reduction (+:reg)
+#endif
+	for (size_t v = 0; v < dim1body; v++) {
+		reg += lsingle * x[v] * x[v];
+		g[v] += 2.0 * lsingle * x[v];
+	}
+
+	return reg;
 
 }

@@ -17,7 +17,7 @@ Experimental GREMLIN version with RRCE contact energies [3]
 * (-) ??? assign contact probabilities in a separate program ???
 * (-) train 1-body terms for gaps
 * (-) retrain and benchmark the new probabilities
-* (-) move regularization to separate functions in ProblemL2_1b class
+* (+) move regularization to separate functions in ProblemL2_1b class
 * (-) New classes: ProblemSL1, ProblemSL1_h
 
 ## Installation
