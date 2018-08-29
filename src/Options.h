@@ -10,7 +10,7 @@
 
 #include <unistd.h>
 
-#define VERSION "V20180821"
+#define VERSION "V20180829"
 
 struct OPTS {
 	char *a3m; /* A3M file */

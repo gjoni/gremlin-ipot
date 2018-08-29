@@ -65,6 +65,17 @@ int main(int argc, char *argv[]) {
 	MSA.MI(mtx);
 	Contacts.AddFeature("MI", mtx);
 
+	if (opts.rmode == 5 || opts.rmode == 6) {
+		if (opts.rmode == 6) {
+			MRFclass::APC(ncol, mtx);
+			Contacts.AddFeature("MIAPC", mtx);
+		}
+		if (opts.mtx != NULL) {
+			Contacts.SaveMTX(opts.mtx, MSA);
+		}
+		return 0;
+	}
+
 	/* joint entropy */
 	MSA.HxHy(mtx);
 	Contacts.AddFeature("Hx+Hy", mtx);
@@ -77,20 +88,22 @@ int main(int argc, char *argv[]) {
 	 * (3) set up the problem
 	 */
 	MRFclass MRF(MSA);
-	{
+	if (opts.rmode > 0) {
+
+		/* train 1-body */
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 1: solve for local fields\n");
 		printf("# %s\n", std::string(70, '-').c_str());
 		ProblemL2_1b P1(MSA);
 		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF);
-	}
 
-	{
+		/* train 1-body & 2-body */
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 2: solve for local fields and couplings\n");
 		printf("# %s\n", std::string(70, '-').c_str());
 		ProblemL2 P(MSA);
 		Minimizer::MinimizeLBFGS(P, opts.niter, MRF);
+
 	}
 
 	/*

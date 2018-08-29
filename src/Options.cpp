@@ -58,6 +58,10 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 				opts.rmode = 3;
 			} else if (strcmp(optarg, "PROB8") == 0) {
 				opts.rmode = 4;
+			} else if (strcmp(optarg, "MI") == 0) {
+				opts.rmode = 5;
+			} else if (strcmp(optarg, "MIAPC") == 0) {
+				opts.rmode = 6;
 			} else if (strcmp(optarg, "ZILCH") == 0) {
 				opts.rmode = 0;
 			} else {
@@ -97,7 +101,7 @@ void PrintOpts(const OPTS &opts) {
 	printf("          -r max gaps per row [0;1)        %.2lf\n", opts.grow);
 	printf("          -c max gaps per column [0;1)     %.2lf\n", opts.gcol);
 	printf("          -R contact matrix correction\n");
-	printf("             {FN,APC,PROB5,PROB8}          PROB8\n");
+	printf("             {FN,APC,PROB5,PROB8,MI,MIAPC} PROB8\n");
 	printf("          -t number of threads             %d\n", opts.nthreads);
 
 }
