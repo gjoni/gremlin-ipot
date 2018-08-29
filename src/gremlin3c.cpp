@@ -17,7 +17,8 @@
 #include <utility>
 
 #include "MSAclass.h"
-#include "ProblemReducedOMP.h"
+#include "ProblemL2.h"
+
 #include "Minimizer.h"
 
 struct OPTS {
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (3) set up the problem
 	 */
-	ProblemReducedOMP P(MSA);
+	ProblemL2 P(MSA);
 	if (opts.mask != NULL) {
 		P.UnmaskAllEdges();
 		for (EDGE_LIST::iterator it = L.begin(); it != L.end(); it++) {

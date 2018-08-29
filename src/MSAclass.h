@@ -14,9 +14,9 @@
 class MSAclass {
 
 	friend class ProblemBase;
-	friend class ProblemReducedOMP;
-	friend class Problem1Body;
-	friend class MRFclass;
+	friend class ProblemL2;
+	friend class ProblemL2_1b;
+//	friend class MRFclass;
 
 private:
 

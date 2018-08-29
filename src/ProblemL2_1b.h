@@ -1,16 +1,16 @@
 /*
- * Problem1Body.h
+ * ProblemL2_1b.h
  *
  *  Created on: Aug 23, 2018
  *      Author: aivan
  */
 
-#ifndef PROBLEM1BODY_H_
-#define PROBLEM1BODY_H_
+#ifndef PROBLEML2_1B_H_
+#define PROBLEML2_1B_H_
 
 #include "ProblemBase.h"
 
-class Problem1Body: public ProblemBase {
+class ProblemL2_1b: public ProblemBase {
 
 private:
 
@@ -33,12 +33,12 @@ private:
 
 public:
 
-	Problem1Body();
-	Problem1Body(const MSAclass &MSA);
-	Problem1Body(const Problem1Body &source);
-	~Problem1Body();
+	ProblemL2_1b();
+	ProblemL2_1b(const MSAclass &MSA);
+	ProblemL2_1b(const ProblemL2_1b &source);
+	~ProblemL2_1b();
 
-	Problem1Body& operator=(const Problem1Body &source);
+	ProblemL2_1b& operator=(const ProblemL2_1b &source);
 
 	double f(const double *x);
 	void df(const double *x, double *g);
@@ -48,4 +48,4 @@ public:
 
 };
 
-#endif /* PROBLEM1BODY_H_ */
+#endif /* PROBLEML2_1B_H_ */

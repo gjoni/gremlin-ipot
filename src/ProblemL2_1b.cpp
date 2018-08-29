@@ -1,5 +1,5 @@
 /*
- * Problem1Body.cpp
+ * ProblemL2_1b.cpp
  *
  *  Created on: Aug 23, 2018
  *      Author: aivan
@@ -11,16 +11,16 @@
 
 #include <omp.h>
 
-#include "Problem1Body.h"
+#include "ProblemL2_1b.h"
 
-Problem1Body::Problem1Body() :
+ProblemL2_1b::ProblemL2_1b() :
 		ProblemBase(), dim1body(0), ea(NULL), pa(NULL), lpa(NULL) {
 
 	/* nothing to be done */
 
 }
 
-Problem1Body::Problem1Body(const MSAclass &MSA_) :
+ProblemL2_1b::ProblemL2_1b(const MSAclass &MSA_) :
 		ProblemBase(MSA_), ea(NULL), pa(NULL), lpa(NULL) {
 
 	SetLsingle(0.01);
@@ -39,7 +39,7 @@ Problem1Body::Problem1Body(const MSAclass &MSA_) :
 
 }
 
-Problem1Body::Problem1Body(const Problem1Body &source) :
+ProblemL2_1b::ProblemL2_1b(const ProblemL2_1b &source) :
 		ProblemBase(source), dim1body(source.dim1body), ea(
 		NULL), pa(NULL), lpa(NULL) {
 
@@ -53,13 +53,13 @@ Problem1Body::Problem1Body(const Problem1Body &source) :
 
 }
 
-Problem1Body::~Problem1Body() {
+ProblemL2_1b::~ProblemL2_1b() {
 
 	Free();
 
 }
 
-void Problem1Body::Allocate() {
+void ProblemL2_1b::Allocate() {
 
 	ea = (double*) malloc(MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
 	pa = (double*) malloc(MSA->nrow * MSA->NAA * MSA->ncol * sizeof(double));
@@ -67,7 +67,7 @@ void Problem1Body::Allocate() {
 
 }
 
-void Problem1Body::Free() {
+void ProblemL2_1b::Free() {
 
 	free(ea);
 	free(pa);
@@ -75,7 +75,7 @@ void Problem1Body::Free() {
 
 }
 
-Problem1Body& Problem1Body::operator=(const Problem1Body &source) {
+ProblemL2_1b& ProblemL2_1b::operator=(const ProblemL2_1b &source) {
 
 	assert(this != &source);
 
@@ -101,7 +101,7 @@ Problem1Body& Problem1Body::operator=(const Problem1Body &source) {
 
 }
 
-double Problem1Body::f(const double *x) {
+double ProblemL2_1b::f(const double *x) {
 
 	double f = 0.0;
 
@@ -173,7 +173,7 @@ double Problem1Body::f(const double *x) {
 
 }
 
-void Problem1Body::fdf(const double *x, double *f, double *g) {
+void ProblemL2_1b::fdf(const double *x, double *f, double *g) {
 
 	size_t ncol = MSA->ncol;
 	size_t nrow = MSA->nrow;
@@ -289,20 +289,20 @@ void Problem1Body::fdf(const double *x, double *f, double *g) {
 
 }
 
-void Problem1Body::df(const double *x, double *g) {
+void ProblemL2_1b::df(const double *x, double *g) {
 
 	double f;
 	fdf(x, &f, g);
 
 }
 
-void Problem1Body::GetMRFvector(const double *x, double *mrfx) {
+void ProblemL2_1b::GetMRFvector(const double *x, double *mrfx) {
 
 	/* */
 
 }
 
-void Problem1Body::Iterate() {
+void ProblemL2_1b::Iterate() {
 
 	/* dummy function */
 

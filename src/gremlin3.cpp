@@ -10,8 +10,9 @@
 #include "MSAclass.h"
 #include "MRFclass.h"
 
-#include "ProblemReducedOMP.h"
-#include "Problem1Body.h"
+#include "ProblemL2.h"
+#include "ProblemL2_1b.h"
+
 #include "Minimizer.h"
 #include "ContactList.h"
 #include "RRCE.h"
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]) {
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 1: solve for local fields\n");
 		printf("# %s\n", std::string(70, '-').c_str());
-		Problem1Body P1(MSA);
+		ProblemL2_1b P1(MSA);
 		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF);
 	}
 
@@ -88,7 +89,7 @@ int main(int argc, char *argv[]) {
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 2: solve for local fields and couplings\n");
 		printf("# %s\n", std::string(70, '-').c_str());
-		ProblemReducedOMP P(MSA);
+		ProblemL2 P(MSA);
 		Minimizer::MinimizeLBFGS(P, opts.niter, MRF);
 	}
 

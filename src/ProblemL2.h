@@ -1,16 +1,16 @@
 /*
- * ProblemReducedOMP.h
+ * ProblemL2.h
  *
  *  Created on: Mar 22, 2018
  *      Author: aivan
  */
 
-#ifndef PROBLEMREDUCEDOMP_H_
-#define PROBLEMREDUCEDOMP_H_
+#ifndef PROBLEML2_H_
+#define PROBLEML2_H_
 
 #include "ProblemBase.h"
 
-class ProblemReducedOMP: public ProblemBase {
+class ProblemL2: public ProblemBase {
 
 private:
 
@@ -38,12 +38,12 @@ private:
 
 public:
 
-	ProblemReducedOMP();
-	ProblemReducedOMP(const MSAclass &MSA);
-	ProblemReducedOMP(const ProblemReducedOMP &source);
-	~ProblemReducedOMP();
+	ProblemL2();
+	ProblemL2(const MSAclass &MSA);
+	ProblemL2(const ProblemL2 &source);
+	~ProblemL2();
 
-	ProblemReducedOMP& operator=(const ProblemReducedOMP &source);
+	ProblemL2& operator=(const ProblemL2 &source);
 
 	double f(const double *x);
 	void df(const double *x, double *g);
@@ -53,4 +53,4 @@ public:
 
 };
 
-#endif /* PROBLEMREDUCEDOMP_H_ */
+#endif /* PROBLEML2_H_ */

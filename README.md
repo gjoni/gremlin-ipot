@@ -3,24 +3,10 @@ Experimental GREMLIN version with RRCE contact energies [3]
 
 ## TODO
 
-* add a caption to restraints files
 * OMP support for Hxy, RRCE energies in gremlin
 * add ./example
 * ./scripts folder content is irrelevant
-* (+) generate Rosetta constraints - separate program
-* (+) OpenMP parallelization
-* (+) remove all GSL-related code
-* (+) PROB8 - default correction
-* (+) remove lpair/lskew options
-* (+) hide masking/unmasking options
-* (+) separate program for Neff calculation
-* (+) clean ./data folder, add relevant stuff, introduce GREMLINDAT env. variable
-* (+) do we really need FN correction? hide it?
-* (+) matrix output after APC (for bbcontacts)
-* (+) remove GREMLINDAT varibale (hard-code default RRCE table)
-* (+) ProblemReducedOMP needs testing for correctness
-* (+) get rid of masking/unmasking options in gremlin3
-* (-) allow for setting initial values for the Minimizer (new MRF class)
+* (+) allow for setting initial values for the Minimizer (new MRF class)
 * (-) move MRFprocessor functions to the new MRFclass, get rid of MRFprocessor
 * (+) train 1-body first, then switch to 2-body
 * (-) refactor contacts processing for the new MRF class
@@ -31,12 +17,7 @@ Experimental GREMLIN version with RRCE contact energies [3]
 * (-) ??? assign contact probabilities in a separate program ???
 * (-) train 1-body terms for gaps
 * (-) retrain and benchmark the new probabilities
-* (-) move regularization to separate functions in Problem1Body class
-
-* (-) Change names:
-ProblemReducedOMP --> ProblemL2
-Problem1Body      --> ProblemL2_h
-
+* (-) move regularization to separate functions in ProblemL2_1b class
 * (-) New classes: ProblemSL1, ProblemSL1_h
 
 ## Installation
