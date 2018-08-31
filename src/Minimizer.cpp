@@ -43,7 +43,10 @@ void Minimizer::MinimizeLBFGS(ProblemBase &P, int niter, MRFclass &MRF) {
 
 	/* custom params */
 	param.max_iterations = niter;
+//	param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
+//	param.min_step = 1e-40;
 	param.m = 3;
+//	param.orthantwise_c = 1.;
 
 	int ret = lbfgs(dim, x, &fx, _evaluate, _progress, &P, &param);
 	printf("# L-BFGS termination code = %d\n", ret);
@@ -56,7 +59,6 @@ lbfgsfloatval_t Minimizer::_evaluate(void *instance, const lbfgsfloatval_t *x,
 	ProblemBase *_P = (ProblemBase*) instance;
 	lbfgsfloatval_t f;
 	_P->fdf(x, &f, g);
-	_P->Iterate();
 	return f;
 
 }
@@ -69,6 +71,11 @@ int Minimizer::_progress(void *instance, const lbfgsfloatval_t *x,
 	printf("# %-8d%-12.5e  %-12.5e  %-12.5e  %-6d  %-10.5f\n", k, fx, xnorm,
 			gnorm, ls, gnorm / xnorm);
 	fflush(stdout);
+
+	ProblemBase *_P = (ProblemBase*) instance;
+	if (k % 3 == 0) {
+		_P->Iterate();
+	}
 
 	return 0;
 }

@@ -13,6 +13,8 @@
 #include "ProblemL2.h"
 #include "ProblemL2_1b.h"
 
+#include "ProblemSmoothL1.h"
+
 #include "Minimizer.h"
 #include "ContactList.h"
 #include "RRCE.h"
@@ -94,14 +96,15 @@ int main(int argc, char *argv[]) {
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 1: solve for local fields\n");
 		printf("# %s\n", std::string(70, '-').c_str());
-		ProblemL2_1b P1(MSA);
-		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF);
+//		ProblemL2_1b P1(MSA);
+//		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF);
 
 		/* train 1-body & 2-body */
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 2: solve for local fields and couplings\n");
 		printf("# %s\n", std::string(70, '-').c_str());
-		ProblemL2 P(MSA);
+//		ProblemL2 P(MSA);
+		ProblemSmoothL1 P(MSA);
 		Minimizer::MinimizeLBFGS(P, opts.niter, MRF);
 
 	}
