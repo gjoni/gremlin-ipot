@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, 4, 1, NULL };
+	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, 4, 1, NULL, 0.01, 0.2 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -107,9 +107,9 @@ int main(int argc, char *argv[]) {
 //		ProblemL2 P(MSA);
 
 		ProblemSmoothL1 P(MSA);
-		double lsingle = 0.01 * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
-		double lpair = 0.2 * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
-		printf("lpair= %f   lsingle= %f\n", lpair, lsingle);
+		double lsingle = opts.lsingle * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
+		double lpair = opts.lpair * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
+		printf("# lsingle= %f   lpair= %f\n", lsingle, lpair);
 		P.SetLsingle(lsingle);
 		P.SetLpair(lpair);
 

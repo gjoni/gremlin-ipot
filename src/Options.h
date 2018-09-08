@@ -22,6 +22,8 @@ struct OPTS {
 	int rmode; /* regularization mode */
 	int nthreads; /* number of threads to use */
 	char *apc; /* APC-corrected contact map */
+	double lsingle;
+	double lpair;
 };
 
 bool GetOpts(int argc, char *argv[], OPTS &opts);

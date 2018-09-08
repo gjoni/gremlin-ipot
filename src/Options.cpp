@@ -13,7 +13,7 @@
 bool GetOpts(int argc, char *argv[], OPTS &opts) {
 
 	char tmp;
-	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:R:p:s:t:b:")) != -1) {
+	while ((tmp = getopt(argc, argv, "hi:o:f:n:r:c:R:p:s:t:b:S:P:")) != -1) {
 		switch (tmp) {
 		case 'h': /* help */
 			printf("!!! HELP !!!\n");
@@ -75,6 +75,12 @@ bool GetOpts(int argc, char *argv[], OPTS &opts) {
 		case 'b': /* APC-corrected contact map (for bbconacts) */
 			opts.apc = optarg;
 			break;
+		case 'S':
+			opts.lsingle = atof(optarg);
+			break;
+		case 'P':
+			opts.lpair = atof(optarg);
+			break;
 		default:
 			return false;
 			break;
@@ -129,7 +135,9 @@ void PrintCap(const OPTS &opts) {
 		printf("# %20s : %s\n", "MRF", opts.mrf);
 	}
 	printf("# %20s : %d\n", "threads", opts.nthreads);
-
+	printf("# %20s : %lf\n", "lsingle", opts.lsingle);
+	printf("# %20s : %lf\n", "lpair", opts.lpair);
+	
 	printf("# %s\n", std::string(70, '-').c_str());
 
 //	printf("# %10s %15s %10s %10s %10s %10s %10s %10s %5s %5s %5s\n", "TMPLT",
