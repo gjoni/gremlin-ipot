@@ -103,8 +103,18 @@ int main(int argc, char *argv[]) {
 		printf("# %s\n", std::string(70, '-').c_str());
 		printf("# step 2: solve for local fields and couplings\n");
 		printf("# %s\n", std::string(70, '-').c_str());
+
 //		ProblemL2 P(MSA);
+
 		ProblemSmoothL1 P(MSA);
+		double lsingle = 0.01 * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
+		double lpair = 0.2 * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
+		printf("lpair= %f   lsingle= %f\n", lpair, lsingle);
+		P.SetLsingle(lsingle);
+		P.SetLpair(lpair);
+
+		P.SetSmoothingFactor(20);
+
 		Minimizer::MinimizeLBFGS(P, opts.niter, MRF);
 
 	}

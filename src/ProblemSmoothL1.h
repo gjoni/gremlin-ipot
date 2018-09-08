@@ -32,6 +32,8 @@ public:
 
 	ProblemSmoothL1& operator=(const ProblemL2 &source);
 
+	void SetSmoothingFactor(double eps);
+
 };
 
 #endif /* PROBLEMSMOOTHL1_H_ */

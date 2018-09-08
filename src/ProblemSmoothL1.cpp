@@ -12,21 +12,21 @@
 #include "ProblemSmoothL1.h"
 
 ProblemSmoothL1::ProblemSmoothL1() :
-		ProblemL2(), eps(0.031250) {
+		ProblemL2(), eps(100.0) {
 
 	/* */
 
 }
 
 ProblemSmoothL1::ProblemSmoothL1(const MSAclass &MSA) :
-		ProblemL2(MSA), eps(0.031250) {
+		ProblemL2(MSA), eps(100.0) {
 
 	/* */
 
 }
 
 ProblemSmoothL1::ProblemSmoothL1(const ProblemL2 &source) :
-		ProblemL2(source), eps(0.031250) {
+		ProblemL2(source), eps(100.0) {
 
 	/* */
 
@@ -90,21 +90,24 @@ double ProblemSmoothL1::Reg_f(const double *x) {
 #pragma omp parallel for reduction (+:reg)
 #endif
 	for (size_t v = 0; v < dim1body; v++) {
-//		reg += lsingle * x[v] * x[v];
 
-		double r = log(1.0 + exp(-eps * x[v])) + log(1.0 + exp(eps * x[v]));
-		reg += lsingle / eps * r;
+//		double r = log(1.0 + exp(-eps * x[v])) + log(1.0 + exp(eps * x[v]));
+//		reg += lsingle / eps * r;
 
-//		reg += lsingle * sqrt(x[v] * x[v] + eps);
+		reg += lsingle * sqrt(x[v] * x[v] + eps);
 	}
 
 #if defined(_OPENMP)
 #pragma omp parallel for reduction (+:reg)
 #endif
 	for (size_t v = 0; v < dim2body; v++) {
-		double r = log(1.0 + exp(-eps * gaux[v]))
-				+ log(1.0 + exp(eps * gaux[v]));
-		reg += 0.5 * lpair / eps * r;
+
+//		double r = log(1.0 + exp(-eps * gaux[v]))
+//				+ log(1.0 + exp(eps * gaux[v]));
+//		reg += 0.5 * lpair / eps * r;
+
+		reg += 0.5 * lpair * sqrt(gaux[v] * gaux[v] + eps);
+
 	}
 
 	return reg;
@@ -115,7 +118,7 @@ double ProblemSmoothL1::Reg_f(const double *x) {
 
 double ProblemSmoothL1::Reg_fdf(const double *x, double *g) {
 
-	printf("Reg_fdf() call: eps= %f ...\n", eps);
+//	printf("Reg_fdf() call: eps= %f ...\n", eps);
 
 	double reg = 0.0;
 
@@ -127,13 +130,13 @@ double ProblemSmoothL1::Reg_fdf(const double *x, double *g) {
 #pragma omp parallel for reduction (+:reg)
 #endif
 	for (size_t v = 0; v < dim1body; v++) {
-//		double r1 = 1.0 + exp(-eps * x[v]);
-//		double r2 = 1.0 + exp(eps * x[v]);
-//		reg += lsingle / eps * (log(r1) + log(r2));
-//		g[v] += lsingle * (1.0 / r1 - 1.0 / r2);
+		double r1 = 1.0 + exp(-eps * x[v]);
+		double r2 = 1.0 + exp(eps * x[v]);
+		reg += lsingle / eps * (log(r1) + log(r2));
+		g[v] += lsingle * (1.0 / r1 - 1.0 / r2);
 
-		reg += lsingle * sqrt(x[v] * x[v] + eps);
-		g[v] += lsingle * x[v] / sqrt(x[v] * x[v] + eps);
+//		reg += lsingle * sqrt(x[v] * x[v] + eps);
+//		g[v] += lsingle * x[v] / sqrt(x[v] * x[v] + eps);
 	}
 
 	/* regularize J */
@@ -141,16 +144,22 @@ double ProblemSmoothL1::Reg_fdf(const double *x, double *g) {
 #pragma omp parallel for reduction (+:reg)
 #endif
 	for (size_t v = 0; v < dim2reduced; v++) {
-//		double r1 = 1.0 + exp(-eps * x2[v]);
-//		double r2 = 1.0 + exp(eps * x2[v]);
-//		reg += lpair / eps * (log(r1) + log(r2));
-//		g2[v] += lpair * (1.0 / r1 - 1.0 / r2);
+		double r1 = 1.0 + exp(-eps * x2[v]);
+		double r2 = 1.0 + exp(eps * x2[v]);
+		reg += lpair / eps * (log(r1) + log(r2));
+		g2[v] += lpair * (1.0 / r1 - 1.0 / r2);
 
-		reg += lpair * sqrt(x2[v] * x2[v] + eps);
-		g2[v] += lpair * x2[v] / sqrt(x2[v] * x2[v] + eps);
+//		reg += lpair * sqrt(x2[v] * x2[v] + eps);
+//		g2[v] += lpair * x2[v] / sqrt(x2[v] * x2[v] + eps);
 
 	}
 
-	return 0;
+	return reg;
+
+}
+
+void ProblemSmoothL1::SetSmoothingFactor(double eps_) {
+
+	eps = eps_;
 
 }

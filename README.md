@@ -20,6 +20,7 @@ Experimental GREMLIN version with RRCE contact energies [3]
 * (+) move regularization to separate functions in ProblemL2_1b class
 * (-) New classes: ProblemSL1, ProblemSL1_h
 * (-) add verbosity levels
+* (-) GREMLINDAT is needed for rstgen
 
 ## Installation
 

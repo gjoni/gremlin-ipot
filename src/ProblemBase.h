@@ -34,9 +34,6 @@ protected:
 	double lsingle;
 	double lpair;
 
-	void SetLsingle(double);
-	void SetLpair(double);
-
 	void AllocateBase();
 	void FreeBase();
 
@@ -82,6 +79,9 @@ public:
 	 * set up iterations schedule
 	 */
 	void SetUpIterations(const std::vector<double>&);
+
+	void SetLsingle(double);
+	void SetLpair(double);
 
 };
 

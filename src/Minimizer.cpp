@@ -46,6 +46,7 @@ void Minimizer::MinimizeLBFGS(ProblemBase &P, int niter, MRFclass &MRF) {
 //	param.linesearch = LBFGS_LINESEARCH_BACKTRACKING;
 //	param.min_step = 1e-40;
 	param.m = 3;
+//	param.max_linesearch = 5;
 //	param.orthantwise_c = 1.;
 
 	int ret = lbfgs(dim, x, &fx, _evaluate, _progress, &P, &param);
