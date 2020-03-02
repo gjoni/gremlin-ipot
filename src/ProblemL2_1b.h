@@ -12,7 +12,7 @@
 
 class ProblemL2_1b: public ProblemBase {
 
-private:
+protected:
 
 	/* Vi dimensions */
 	size_t dim1body;
@@ -25,8 +25,8 @@ private:
 	void Allocate();
 	void Free();
 
-	double Reg_f(const double *x);
-	double Reg_fdf(const double *x, double *g);
+	virtual double Reg_f(const double *x);
+	virtual double Reg_fdf(const double *x, double *g);
 
 	void Iterate();
 

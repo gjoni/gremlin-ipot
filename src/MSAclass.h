@@ -16,6 +16,8 @@ class MSAclass {
 	friend class ProblemBase;
 	friend class ProblemL2;
 	friend class ProblemL2_1b;
+	friend class ProblemSmoothL1;
+	friend class ProblemSmoothL1_1b;
 //	friend class MRFclass;
 
 private:

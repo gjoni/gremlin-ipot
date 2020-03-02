@@ -14,6 +14,7 @@
 #include "ProblemL2_1b.h"
 
 #include "ProblemSmoothL1.h"
+#include "ProblemSmoothL1_1b.h"
 
 #include "Minimizer.h"
 #include "ContactList.h"
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]) {
 	/*
 	 * (0) process input parameters
 	 */
-	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, 4, 1, NULL, 0.01, 0.2 };
+	OPTS opts = { NULL, NULL, NULL, 25, 0.25, 0.25, 2, 1, NULL, 0.01, 0.2 };
 	if (!GetOpts(argc, argv, opts)) {
 		PrintOpts(opts);
 		return 1;
@@ -93,10 +94,12 @@ int main(int argc, char *argv[]) {
 	if (opts.rmode > 0) {
 
 		/* train 1-body */
-		printf("# %s\n", std::string(70, '-').c_str());
-		printf("# step 1: solve for local fields\n");
-		printf("# %s\n", std::string(70, '-').c_str());
-//		ProblemL2_1b P1(MSA);
+//		printf("# %s\n", std::string(70, '-').c_str());
+//		printf("# step 1: solve for local fields\n");
+//		printf("# %s\n", std::string(70, '-').c_str());
+//		ProblemSmoothL1_1b P1(MSA);
+//		P1.SetSmoothingFactor(0.01);
+//		P1.SetLsingle(1.0);
 //		Minimizer::MinimizeLBFGS(P1, opts.niter, MRF);
 
 		/* train 1-body & 2-body */
@@ -104,16 +107,15 @@ int main(int argc, char *argv[]) {
 		printf("# step 2: solve for local fields and couplings\n");
 		printf("# %s\n", std::string(70, '-').c_str());
 
-//		ProblemL2 P(MSA);
+		ProblemL2 P(MSA);
 
-		ProblemSmoothL1 P(MSA);
-		double lsingle = opts.lsingle * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
-		double lpair = opts.lpair * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
-		printf("# lsingle= %f   lpair= %f\n", lsingle, lpair);
-		P.SetLsingle(lsingle);
-		P.SetLpair(lpair);
-
-		P.SetSmoothingFactor(20);
+//		ProblemSmoothL1 P(MSA);
+//		double lsingle = opts.lsingle * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
+//		double lpair = opts.lpair * sqrt(MSA.GetNeff() * log(1.0 * MSA.GetNcol()));
+//		printf("# lsingle= %f   lpair= %f\n", lsingle, lpair);
+//		P.SetLsingle(lsingle);
+//		P.SetLpair(lpair);
+//		P.SetSmoothingFactor(20);
 
 		Minimizer::MinimizeLBFGS(P, opts.niter, MRF);
 
@@ -220,7 +222,7 @@ int main(int argc, char *argv[]) {
 		Contacts.SaveMTX(opts.mtx, MSA);
 	}
 
-//	Contacts.Print(MSA);
+	//Contacts.Print(MSA);
 
 	/*
 	 * (8) finish date/time

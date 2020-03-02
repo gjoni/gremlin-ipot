@@ -102,11 +102,11 @@ double ProblemSmoothL1::Reg_f(const double *x) {
 #endif
 	for (size_t v = 0; v < dim2body; v++) {
 
-//		double r = log(1.0 + exp(-eps * gaux[v]))
-//				+ log(1.0 + exp(eps * gaux[v]));
-//		reg += 0.5 * lpair / eps * r;
+		double r = log(1.0 + exp(-eps * gaux[v]))
+				+ log(1.0 + exp(eps * gaux[v]));
+		reg += 0.5 * lpair / eps * r;
 
-		reg += 0.5 * lpair * sqrt(gaux[v] * gaux[v] + eps);
+//		reg += 0.5 * lpair * sqrt(gaux[v] * gaux[v] + eps);
 
 	}
 

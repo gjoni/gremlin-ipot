@@ -80,6 +80,7 @@ ProblemL2_1b& ProblemL2_1b::operator=(const ProblemL2_1b &source) {
 	assert(this != &source);
 
 	FreeBase();
+	//Free();
 
 	dim = source.dim;
 	dim1body = source.dim1body;

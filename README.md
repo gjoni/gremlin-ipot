@@ -1,27 +1,6 @@
 # gremlin3
 Experimental GREMLIN version with RRCE contact energies [3]
 
-## TODO
-
-* OMP support for Hxy, RRCE energies in gremlin
-* add ./example
-* ./scripts folder content is irrelevant
-* (+) allow for setting initial values for the Minimizer (new MRF class)
-* (-) move MRFprocessor functions to the new MRFclass, get rid of MRFprocessor
-* (+) train 1-body first, then switch to 2-body
-* (+) refactor contacts processing for the new MRF class
-* (+) ProblemReducedOMP --> ProblemL2
-* (-) ProblemSmoothL1 (child of ProblemL2)
-* (-) How to deal with iteration-dependent parameters?
-* (+) MI+APC correction (MIAPC)
-* (-) ??? assign contact probabilities in a separate program ???
-* (-) train 1-body terms for gaps
-* (-) retrain and benchmark the new probabilities
-* (+) move regularization to separate functions in ProblemL2_1b class
-* (-) New classes: ProblemSL1, ProblemSL1_h
-* (-) add verbosity levels
-* (-) GREMLINDAT is needed for rstgen
-
 ## Installation
 
 ### Download and compilation

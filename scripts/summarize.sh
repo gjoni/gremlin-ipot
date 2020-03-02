@@ -11,7 +11,7 @@
 A3M=$1
 GRM=$2
 
-LEN=$(head -n 2 $A3M | tail -1 | awk '{print length($1)}')
+LEN=$(head -n 2 $A3M | tail -1 | sed "s/[a-z]//g" | awk '{print length($1)}')
 ROW=$(grep -c "^>" $A3M)
 
 alifile=$(mktemp /tmp/XXXXXX.ali)
