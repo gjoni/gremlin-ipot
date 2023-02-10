@@ -1,5 +1,5 @@
-# gremlin3
-Experimental GREMLIN version with RRCE contact energies [3]
+# gremlin-ipot
+GREMLIN version with residue-residue contact energies from the [iPot repo](https://github.com/gjoni/iPot).
 
 ## Installation
 
